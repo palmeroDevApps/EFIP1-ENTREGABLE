@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="740.0" prefWidth="1140.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.ComprasController">
+   
+   <!-- CABECERA DE MÓDULO -->
+   <top>
+      <VBox spacing="0.0" BorderPane.alignment="CENTER">
+         <children>
+            <ToolBar>
+               <items>
+                  <Label text="JRMARKET v1.0 | Abastecimiento y Compras Mayoristas">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+               </items>
+            </ToolBar>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #f5f5f5; -fx-padding: 8 15 8 15; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;">
+               <children>
+                  <Label text="Operador:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="lblOperador" text="Cristian Palmero" textFill="#212121" />
+                  
+                  <Separator orientation="VERTICAL" />
+                  <Label text="Módulo: Gestión de Inventario y Reposición" textFill="#424242">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </top>
+
+   <!-- CUERPO PRINCIPAL CON PESTAÑAS -->
+   <center>
+      <TabPane fx:id="tabPaneCompras" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER">
+         <tabs>
+            
+            <!-- PESTAÑA 1: CREAR LISTA DE COMPRAS -->
+            <Tab text="Crear Lista de Compras">
+               <content>
+                  <VBox spacing="12.0">
+                     <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                     </padding>
+                     <children>
+                        <!-- BOTONERA SUPERIOR ESTANDARIZADA -->
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" style="-fx-background-color: #fafafa; -fx-padding: 10; -fx-border-color: #cfd8dc; -fx-border-radius: 6;">
+                           <children>
+                              <Button fx:id="btnGenerarSugeridos" onAction="#generarListaSugeridos" prefHeight="32.0" text="Cargar Productos Sugeridos" />
+                              <Button fx:id="btnImprimirLista" onAction="#imprimirListaFaltantes" prefHeight="32.0" text="Imprimir Lista" />
+                              <Button fx:id="btnLimpiarLista" onAction="#limpiarListaFaltantes" prefHeight="32.0" text="Limpiar Lista" />
+                              
+                              <Separator orientation="VERTICAL" />
+                              <Label fx:id="lblResumenFaltantes" text="Lista vacía (0 artículos)" textFill="#616161">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </HBox>
+
+                        <TableView fx:id="tblFaltantes" VBox.vgrow="ALWAYS">
+                           <columns>
+                              <TableColumn fx:id="colFaltanteCodigo" prefWidth="120.0" text="Código" />
+                              <TableColumn fx:id="colFaltanteMarca" prefWidth="140.0" text="Marca" />
+                              <TableColumn fx:id="colFaltanteDescripcion" prefWidth="350.0" text="Descripción" />
+                              <TableColumn fx:id="colFaltanteRubro" prefWidth="130.0" text="Rubro" />
+                              <TableColumn fx:id="colFaltanteStockActual" prefWidth="110.0" style="-fx-alignment: CENTER;" text="Stock Actual" />
+                              <TableColumn fx:id="colFaltanteStockMinimo" prefWidth="110.0" style="-fx-alignment: CENTER;" text="Stock Mínimo" />
+                              <TableColumn fx:id="colFaltanteSugerido" prefWidth="130.0" style="-fx-alignment: CENTER;" text="Compra Sugerida" />
+                           </columns>
+                           <columnResizePolicy>
+                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                           </columnResizePolicy>
+                        </TableView>
+                        
+                        <Label text="* Esta lista se elabora en base al stock crítico y sirve como guía de compras para recorrer el mayorista." textFill="#757575">
+                           <font>
+                              <Font size="11.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </VBox>
+               </content>
+            </Tab>
+
+            <!-- PESTAÑA 2: REGISTRAR COMPRA DE MERCADERÍA -->
+            <Tab text="Registrar Compra de Mercadería">
+               <content>
+                  <VBox spacing="12.0">
+                     <padding>
+                        <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+                     </padding>
+                     <children>
+                        
+                        <!-- DATOS DEL COMPROBANTE -->
+                        <HBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #fafafa; -fx-padding: 10; -fx-border-color: #cfd8dc; -fx-border-radius: 6;">
+                           <children>
+                              <Label text="Mayorista:">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Label>
+                              <ComboBox fx:id="cbProveedor" prefHeight="32.0" prefWidth="250.0" promptText="Seleccione mayorista..." />
+                              
+                              <Separator orientation="VERTICAL" />
+                              
+                              <Label text="Nro. Ticket / Factura:">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Label>
+                              <TextField fx:id="txtNroComprobante" prefHeight="32.0" prefWidth="200.0" promptText="Ej: TKT-0012-00045210" />
+                           </children>
+                        </HBox>
+
+                        <!-- BARRA DE BÚSQUEDA Y CARGA DIRECTA -->
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: #fafafa; -fx-padding: 10; -fx-border-color: #cfd8dc; -fx-border-radius: 6;">
+                           <children>
+                              <Label text="Buscar Producto:">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Label>
+                              <TextField fx:id="txtCodigoBarras" onAction="#agregarPorCodigo" prefHeight="32.0" prefWidth="320.0" promptText="Ingrese código o descripción y presione Enter..." />
+                              
+                              <Button fx:id="btnExplorar" onAction="#abrirExploradorProductos" prefHeight="32.0" text="[ F4 ] Explorar Catálogo" />
+                           </children>
+                        </HBox>
+
+                        <!-- TABLA DE ARTÍCULOS COMPRADOS -->
+                        <TableView fx:id="tblDetalleCompra" VBox.vgrow="ALWAYS">
+                           <columns>
+                              <TableColumn fx:id="colCodigo" prefWidth="120.0" text="Código" />
+                              <TableColumn fx:id="colMarca" prefWidth="140.0" text="Marca" />
+                              <TableColumn fx:id="colDescripcion" prefWidth="350.0" text="Descripción" />
+                              <TableColumn fx:id="colCantidad" prefWidth="110.0" style="-fx-alignment: CENTER;" text="Unidades Comp." />
+                              <TableColumn fx:id="colCostoUnitario" prefWidth="130.0" style="-fx-alignment: CENTER-RIGHT;" text="Costo Unitario" />
+                              <TableColumn fx:id="colSubtotal" prefWidth="130.0" style="-fx-alignment: CENTER-RIGHT;" text="Subtotal" />
+                           </columns>
+                           <columnResizePolicy>
+                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                           </columnResizePolicy>
+                        </TableView>
+
+                        <!-- SECCIÓN INFERIOR: ACCIONES, TIPS Y TOTAL -->
+                        <HBox spacing="20.0">
+                           <children>
+                              <VBox prefWidth="440.0" spacing="8.0">
+                                 <children>
+                                    <Label text="ACCIONES:" textFill="#424242">
+                                       <font>
+                                          <Font name="System Bold" size="11.0" />
+                                       </font>
+                                    </Label>
+                                    <Button fx:id="btnQuitarItem" maxWidth="Infinity" onAction="#quitarItemSeleccionado" prefHeight="32.0" text="[ Supr ] Quitar Ítem Seleccionado" />
+                                    <Button fx:id="btnCancelarCompra" maxWidth="Infinity" onAction="#cancelarCompraCompleta" prefHeight="32.0" text="[ Esc ] Limpiar Formulario" />
+                                    
+                                    <VBox spacing="4.0">
+                                       <VBox.margin>
+                                          <Insets top="4.0" />
+                                       </VBox.margin>
+                                       <children>
+                                          <Label text="Tip: Acciones disponibles:" textFill="#616161">
+                                             <font>
+                                                <Font name="System Bold" size="11.0" />
+                                             </font>
+                                          </Label>
+                                          <Label text="• Presione Enter en el buscador para cargar el producto ingresado." textFill="#757575">
+                                             <font>
+                                                <Font size="11.0" />
+                                             </font>
+                                          </Label>
+                                          <Label text="• Presione [ F4 ] para seleccionar artículos directamente desde el catálogo." textFill="#757575">
+                                             <font>
+                                                <Font size="11.0" />
+                                             </font>
+                                          </Label>
+                                       </children>
+                                    </VBox>
+                                 </children>
+                              </VBox>
+
+                              <VBox spacing="10.0" style="-fx-border-color: #cfd8dc; -fx-border-radius: 6; -fx-padding: 12; -fx-background-color: #fafafa;" HBox.hgrow="ALWAYS">
+                                 <children>
+                                    <HBox alignment="CENTER_LEFT">
+                                       <children>
+                                          <Label text="TOTAL TICKET MAYORISTA: ">
+                                             <font>
+                                                <Font name="System Bold" size="14.0" />
+                                             </font>
+                                          </Label>
+                                          <Region HBox.hgrow="ALWAYS" />
+                                          <Label fx:id="lblTotalCompra" text="\$ 0,00" textFill="#212121">
+                                             <font>
+                                                <Font name="System Bold" size="18.0" />
+                                             </font>
+                                          </Label>
+                                       </children>
+                                    </HBox>
+                                    <Separator />
+                                    <!-- BOTÓN CONFIRMAR ESTANDARIZADO NATIVO -->
+                                    <Button fx:id="btnRegistrarCompra" disable="true" maxWidth="Infinity" onAction="#confirmarIngresoMercaderia" prefHeight="32.0" text="Confirmar" />
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+
+                     </children>
+                  </VBox>
+               </content>
+            </Tab>
+
+         </tabs>
+      </TabPane>
+   </center>
+
+</BorderPane>

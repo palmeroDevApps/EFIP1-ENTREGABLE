@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="720.0" prefWidth="1080.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.CierreTurnoController">
+   
+   <!-- CABECERA DE OPERACIÓN -->
+   <top>
+      <VBox spacing="10.0" BorderPane.alignment="CENTER">
+         <children>
+            <ToolBar>
+               <items>
+                  <Label text="JRMARKET v1.0 | Cierre de Turno y Arqueo General">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+               </items>
+            </ToolBar>
+            
+            <!-- FRANJA DE CONTEXTO: USUARIO Y DATOS EN SOLO LECTURA -->
+            <HBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #f5f5f5; -fx-padding: 8 15 8 15; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;">
+               <children>
+                  <Label text="Operador en Turno:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <!-- Campo de texto fijo, no modificable -->
+                  <Label fx:id="lblOperador" text="Cristian Palmero" textFill="#212121">
+                     <font>
+                        <Font size="12.0" />
+                     </font>
+                  </Label>
+                  
+                  <Separator orientation="VERTICAL" />
+                  <Label fx:id="lblTurnoId" text="Turno: #001" />
+                  
+                  <Separator orientation="VERTICAL" />
+                  <Label fx:id="lblFechaApertura" text="Apertura: --/--/---- --:-- hs" />
+                  
+                  <Separator orientation="VERTICAL" />
+                  <Label fx:id="lblFechaCierre" text="Cierre: Pendiente" textFill="#616161" />
+
+                  <Separator orientation="VERTICAL" />
+                  <Label fx:id="lblEstadoTurno" text="Caja Abierta" textFill="#424242">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+               </children>
+            </HBox>
+
+            <HBox fx:id="boxAlertaRol" alignment="CENTER_LEFT" spacing="10.0" managed="false" style="-fx-background-color: #f5f5f5; -fx-border-color: #b0bec5; -fx-border-radius: 4; -fx-padding: 8 15 8 15;" visible="false">
+               <children>
+                  <Label text="ACCESO RESTRINGIDO:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="lblMensajeRol" text="El rol asignado no posee atribuciones contables para realizar arqueos o cerrar turnos." textFill="#424242" />
+               </children>
+               <VBox.margin>
+                  <Insets left="15.0" right="15.0" />
+               </VBox.margin>
+            </HBox>
+         </children>
+      </VBox>
+   </top>
+
+   <!-- CUERPO PRINCIPAL -->
+   <center>
+      <HBox fx:id="contenedorPrincipal" spacing="20.0" BorderPane.alignment="CENTER">
+         <padding>
+            <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+         </padding>
+         <children>
+            
+            <!-- PANEL IZQUIERDO: LIBRO SISTÉMICO -->
+            <VBox prefWidth="510.0" spacing="12.0" style="-fx-border-color: #cfd8dc; -fx-border-radius: 6; -fx-padding: 15; -fx-background-color: #fafafa;">
+               <children>
+                  <Label text="BALANCE DEL SISTEMA (TRANSACCIONES)">
+                     <font>
+                        <Font name="System Bold" size="13.0" />
+                     </font>
+                  </Label>
+                  <Separator />
+
+                  <GridPane hgap="10.0" vgap="12.0">
+                     <columnConstraints>
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="200.0" />
+                        <ColumnConstraints halignment="RIGHT" minWidth="120.0" />
+                     </columnConstraints>
+                     <children>
+                        <Label text="Fondo Inicial de Caja:" />
+                        <Label fx:id="lblFondoInicial" text="\$ 5000,00" GridPane.columnIndex="1">
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                        </Label>
+
+                        <Label text="Ventas en Efectivo:" GridPane.rowIndex="1" />
+                        <Label fx:id="lblVentasEfectivo" text="\$ 15700,00" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                        </Label>
+
+                        <Label text="EFECTIVO ESPERADO EN CAJÓN:" GridPane.rowIndex="2">
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                        <Label fx:id="lblEfectivoEsperado" text="\$ 20700,00" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                           <font>
+                              <Font name="System Bold" size="14.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </GridPane>
+
+                  <Separator />
+
+                  <Label text="OPERACIONES BANCARIAS / VIRTUALES:" textFill="#616161">
+                     <font>
+                        <Font name="System Bold" size="11.0" />
+                     </font>
+                  </Label>
+
+                  <GridPane hgap="10.0" vgap="10.0">
+                     <columnConstraints>
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="200.0" />
+                        <ColumnConstraints halignment="RIGHT" minWidth="120.0" />
+                     </columnConstraints>
+                     <children>
+                        <Label text="Transferencias Recibidas:" />
+                        <Label fx:id="lblVentasTransferencia" text="\$ 8500,00" GridPane.columnIndex="1">
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                        </Label>
+
+                        <Label text="Tickets Emitidos en el Turno:" GridPane.rowIndex="1" />
+                        <Label fx:id="lblCantidadTickets" text="5 tickets emitidos" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                     </children>
+                  </GridPane>
+
+                  <Separator />
+
+                  <HBox alignment="CENTER_LEFT">
+                     <children>
+                        <Label text="TOTAL FACTURADO GENERAL: ">
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                        </Label>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblTotalFacturado" text="\$ 24200,00">
+                           <font>
+                              <Font name="System Bold" size="15.0" />
+                           </font>
+                        </Label>
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+
+            <!-- PANEL DERECHO: ARQUEO FÍSICO + CONCILIACIÓN BANCARIA -->
+            <VBox fx:id="panelArqueo" prefWidth="540.0" spacing="12.0" style="-fx-border-color: #cfd8dc; -fx-border-radius: 6; -fx-padding: 15; -fx-background-color: #ffffff;">
+               <children>
+                  <Label text="ARQUEO Y CONCILIACIÓN DEL TURNO">
+                     <font>
+                        <Font name="System Bold" size="13.0" />
+                     </font>
+                  </Label>
+                  <Separator />
+
+                  <!-- 1. DECLARACIÓN DE EFECTIVO -->
+                  <VBox spacing="6.0">
+                     <children>
+                        <Label text="1. Arqueo de Efectivo Físico (Billetes en Cajón):">
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <Label text="Efectivo Real:  $" />
+                              <TextField fx:id="txtEfectivoReal" onKeyReleased="#calcularConciliacion" prefHeight="30.0" prefWidth="140.0" promptText="0.00" />
+                              <Label text="Desvío:" textFill="#616161" />
+                              <Label fx:id="lblDesvioEfectivo" text="\$ 0,00" textFill="#212121">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+
+                  <!-- 2. DECLARACIÓN DE TRANSFERENCIAS -->
+                  <VBox spacing="6.0">
+                     <children>
+                        <Label text="2. Conciliación de Transferencias (Extracto / App Bancaria):">
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <Label text="Acreditado:     $" />
+                              <TextField fx:id="txtTransferenciaReal" onKeyReleased="#calcularConciliacion" prefHeight="30.0" prefWidth="140.0" promptText="0.00" />
+                              <Label text="Desvío:" textFill="#616161" />
+                              <Label fx:id="lblDesvioTransferencia" text="\$ 0,00" textFill="#212121">
+                                 <font>
+                                    <Font name="System Bold" size="12.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+
+                  <!-- RESULTADO CONSOLIDADO -->
+                  <VBox spacing="4.0" style="-fx-background-color: #f8f9fa; -fx-padding: 10; -fx-border-color: #dee2e6; -fx-border-radius: 4;">
+                     <children>
+                        <Label text="RESULTADO GENERAL DEL TURNO:" textFill="#424242">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <Label text="Diferencia Total:">
+                                 <font>
+                                    <Font size="13.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="lblDiferenciaTotal" text="\$ 0,00" textFill="#212121">
+                                 <font>
+                                    <Font name="System Bold" size="15.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="lblEstadoDiferencia" text="" textFill="#424242" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+
+                  <Label text="Observaciones / Justificación de desvíos:" />
+                  <TextArea fx:id="txtObservaciones" prefHeight="70.0" promptText="Opcional: justifique desvíos en efectivo o transferencias pendientes..." wrapText="true" />
+
+                  <Separator />
+
+                  <HBox alignment="CENTER_RIGHT" spacing="12.0">
+                     <children>
+                        <Button fx:id="btnCancelar" onAction="#cancelarCierre" prefHeight="36.0" prefWidth="110.0" text="Cancelar" />
+                        <Button fx:id="btnConfirmarCierre" disable="true" onAction="#confirmarCierreTurno" prefHeight="36.0" prefWidth="210.0" style="-fx-border-color: #b0bec5; -fx-border-radius: 4; -fx-background-color: #eceff1; -fx-font-weight: bold;" text="[ F10 ] CERRAR TURNO" />
+                     </children>
+                  </HBox>
+
+                  <Label fx:id="lblMensajeFeedback" text="" textFill="#424242">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+               </children>
+            </VBox>
+
+         </children>
+      </HBox>
+   </center>
+</BorderPane>
