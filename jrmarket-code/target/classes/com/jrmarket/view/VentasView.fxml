@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="740.0" prefWidth="1140.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.VentasController">
+   
+   <!-- CABECERA INSTITUCIONAL -->
+   <top>
+      <VBox spacing="0.0" BorderPane.alignment="CENTER">
+         <children>
+            <ToolBar>
+               <items>
+                  <Label text="JRMARKET v1.0 | Mostrador de Ventas y Cobro">
+                     <font>
+                        <Font name="System Bold" size="14.0" />
+                     </font>
+                  </Label>
+               </items>
+            </ToolBar>
+            
+            <HBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #f5f5f5; -fx-padding: 8 15 8 15; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0;">
+               <children>
+                  <Label text="Operador:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="lblOperador" text="Cristian Palmero" textFill="#212121" />
+
+                  <Separator orientation="VERTICAL" />
+
+                  <Label text="Turno:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="lblNroTurno" text="#001" textFill="#212121" />
+
+                  <Separator orientation="VERTICAL" />
+
+                  <Label fx:id="lblEstadoCaja" text="CERRADO" textFill="#b71c1c">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Separator orientation="VERTICAL" />
+                  <Button fx:id="btnAbrirTurno" onAction="#abrirTurno" prefHeight="28.0" text="Abrir turno" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </top>
+
+   <!-- CUERPO PRINCIPAL -->
+   <center>
+      <VBox fx:id="boxOperacionesVenta" spacing="12.0" BorderPane.alignment="CENTER">
+         <padding>
+            <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+         </padding>
+         <children>
+            
+            <!-- BARRA DE BÚSQUEDA Y SELECCIÓN -->
+            <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: #fafafa; -fx-padding: 10; -fx-border-color: #cfd8dc; -fx-border-radius: 6;">
+               <children>
+                  <Label text="Buscar Producto:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtCodigoBarras" onAction="#agregarPorCodigo" prefHeight="32.0" prefWidth="320.0" promptText="Ingrese código o descripción y presione Enter..." />
+                  
+                  <Button fx:id="btnExplorar" onAction="#abrirExploradorProductos" prefHeight="32.0" text="[ F4 ] Explorar Catálogo" />
+               </children>
+            </HBox>
+
+            <!-- TABLA DE DETALLE DE VENTA -->
+            <TableView fx:id="tblDetalleVenta" VBox.vgrow="ALWAYS">
+               <columns>
+                  <TableColumn fx:id="colCodigo" prefWidth="120.0" text="Código" />
+                  <TableColumn fx:id="colMarca" prefWidth="140.0" text="Marca" />
+                  <TableColumn fx:id="colDescripcion" prefWidth="350.0" text="Descripción" />
+                  <TableColumn fx:id="colCantidad" prefWidth="100.0" style="-fx-alignment: CENTER;" text="Cantidad" />
+                  <TableColumn fx:id="colPrecioUnitario" prefWidth="130.0" style="-fx-alignment: CENTER-RIGHT;" text="Precio Unitario" />
+                  <TableColumn fx:id="colSubtotal" prefWidth="130.0" style="-fx-alignment: CENTER-RIGHT;" text="Subtotal" />
+               </columns>
+               <columnResizePolicy>
+                  <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+               </columnResizePolicy>
+            </TableView>
+
+            <!-- SECCIÓN INFERIOR -->
+            <HBox spacing="20.0">
+               <children>
+                  
+                  <!-- ACCIONES Y ATAJOS -->
+                  <VBox prefWidth="440.0" spacing="8.0">
+                     <children>
+                        <Label text="ACCIONES DE MOSTRADOR:" textFill="#424242">
+                           <font>
+                              <Font name="System Bold" size="11.0" />
+                           </font>
+                        </Label>
+                        <Button fx:id="btnQuitarItem" maxWidth="Infinity" onAction="#quitarItemSeleccionado" prefHeight="32.0" text="[ Supr ] Quitar Ítem Seleccionado" />
+                        <Button fx:id="btnCancelarVenta" maxWidth="Infinity" onAction="#cancelarVentaCompleta" prefHeight="32.0" text="[ Esc ] Cancelar Venta Completa" />
+
+                        <VBox spacing="4.0">
+                           <VBox.margin>
+                              <Insets top="4.0" />
+                           </VBox.margin>
+                           <children>
+                              <Label text="Tip: Acciones disponibles:" textFill="#616161">
+                                 <font>
+                                    <Font name="System Bold" size="11.0" />
+                                 </font>
+                              </Label>
+                              <Label text="• Presione Enter en el buscador para cargar el producto ingresado." textFill="#757575">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                              </Label>
+                              <Label text="• Presione [ F4 ] para abrir el catálogo general de productos." textFill="#757575">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                     </children>
+                  </VBox>
+
+                  <!-- COBRO Y TOTAL -->
+                  <VBox spacing="10.0" style="-fx-border-color: #cfd8dc; -fx-border-radius: 6; -fx-padding: 12; -fx-background-color: #fafafa;" HBox.hgrow="ALWAYS">
+                     <children>
+                        
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Label text="TOTAL A COBRAR:">
+                                 <font>
+                                    <Font name="System Bold" size="15.0" />
+                                 </font>
+                              </Label>
+                              <Region HBox.hgrow="ALWAYS" />
+                              <Label fx:id="lblTotalPagar" text="\$ 0,00" textFill="#212121">
+                                 <font>
+                                    <Font name="System Bold" size="20.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </HBox>
+
+                        <Separator />
+
+                        <!-- FORMA DE PAGO -->
+                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                           <children>
+                              <Label text="Medio de Pago:">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <ComboBox fx:id="cbMedioPago" prefHeight="30.0" prefWidth="180.0" />
+
+                              <Label text="Nro. Comprobante:">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <TextField fx:id="txtNroComprobante" prefHeight="30.0" promptText="Transf. / Cupón" HBox.hgrow="ALWAYS" />
+                           </children>
+                        </HBox>
+
+                        <!-- PAGO EN EFECTIVO Y VUELTO -->
+                        <HBox alignment="CENTER_LEFT" spacing="15.0">
+                           <children>
+                              <Label text="Paga con:  $">
+                                 <font>
+                                    <Font size="12.0" />
+                                 </font>
+                              </Label>
+                              <!-- fx:id corregido a txtPagaCon -->
+                              <TextField fx:id="txtPagaCon" onKeyReleased="#calcularVuelto" prefHeight="30.0" prefWidth="140.0" />
+
+                              <Region HBox.hgrow="ALWAYS" />
+
+                              <Label text="VUELTO:">
+                                 <font>
+                                    <Font name="System Bold" size="13.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="lblVuelto" text="\$ 0,00" textFill="#212121">
+                                 <font>
+                                    <Font name="System Bold" size="16.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </HBox>
+
+                        <Separator />
+
+                        <!-- BOTÓN ESTANDARIZADO NATIVO -->
+                        <Button fx:id="btnConfirmarVenta" disable="true" maxWidth="Infinity" onAction="#confirmarVenta" prefHeight="32.0" text="Confirmar" />
+
+                     </children>
+                  </VBox>
+
+               </children>
+            </HBox>
+
+         </children>
+      </VBox>
+   </center>
+
+</BorderPane>
