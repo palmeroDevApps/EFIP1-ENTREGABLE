@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Marca comercial utilizada para clasificar productos del catálogo. */
 public class Marca implements Serializable {
     private int idMarca;
     private String nombre;

@@ -6,6 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
+/** Usuario de la aplicación; su rol determina los módulos a los que puede acceder. */
 public class Usuario implements Serializable {
     private int idUsuario;
     private String nombreUsuario;
@@ -25,6 +26,7 @@ public class Usuario implements Serializable {
         this.rol = rol;
     }
 
+    /** Compara la contraseña ingresada con el hash SHA-256 guardado en el usuario. */
     public boolean autenticar(String pass) {
         if (!this.estado || this.contrasenia == null || pass == null) return false;
         try {
@@ -36,10 +38,12 @@ public class Usuario implements Serializable {
         }
     }
 
+    /** Activa o desactiva la cuenta para permitir o impedir el inicio de sesión. */
     public void cambiarEstado(boolean nuevoEstado) {
         this.estado = nuevoEstado;
     }
 
+    /** Consulta los permisos asociados al rol para autorizar el acceso a un módulo. */
     public boolean tienePermiso(String modulo) {
         if (this.rol == null || this.rol.getRolPermisos() == null) return false;
         for (RolPermiso rp : this.rol.getRolPermisos()) {

@@ -5,18 +5,21 @@ import java.text.DecimalFormatSymbols;
 import java.text.ParsePosition;
 import java.util.Locale;
 
+/** Convierte importes entre valores numéricos y el formato habitual argentino. */
 public final class FormatoImporte {
     private static final DecimalFormatSymbols SIMBOLOS =
         DecimalFormatSymbols.getInstance(Locale.forLanguageTag("es-AR"));
 
     private FormatoImporte() {}
 
+    /** Muestra dos decimales, punto de miles y coma decimal. */
     public static String formatear(double importe) {
         DecimalFormat formato = new DecimalFormat("#,##0.00", SIMBOLOS);
         formato.setGroupingUsed(true);
         return formato.format(importe);
     }
 
+    /** Convierte texto local, como "10.500,00", a double o rechaza el formato. */
     public static double parsear(String texto) {
         String entrada = texto == null ? "" : texto.trim();
         DecimalFormat formato = new DecimalFormat("#,##0.################", SIMBOLOS);

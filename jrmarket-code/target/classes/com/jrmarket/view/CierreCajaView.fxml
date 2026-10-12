@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
+<!-- Arqueo del turno: presenta los importes del sistema y recibe los conteos reales. -->
 <BorderPane prefHeight="720.0" prefWidth="1080.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.CierreTurnoController">
    
    <!-- CABECERA DE OPERACIÓN -->

@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Renglón de compra con cantidad, costo unitario y subtotal del producto recibido. */
 public class DetalleCompra implements Serializable {
     private int idDetalleCompra;
     private int cantidad;
@@ -20,6 +21,7 @@ public class DetalleCompra implements Serializable {
         this.subtotal = calcularSubtotal();
     }
 
+    /** Calcula cantidad por costo unitario y conserva el resultado en el renglón. */
     public double calcularSubtotal() {
         this.subtotal = this.cantidad * this.costoUnitario;
         return this.subtotal;

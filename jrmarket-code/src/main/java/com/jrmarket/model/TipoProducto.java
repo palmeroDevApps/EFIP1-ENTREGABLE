@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Rubro que agrupa productos para búsqueda y organización del catálogo. */
 public class TipoProducto implements Serializable {
     private int idTipoProducto;
     private String nombre;

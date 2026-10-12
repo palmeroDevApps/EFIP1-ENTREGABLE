@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.time.LocalDate;
 
+/** Medio de pago, su vigencia y su efecto sobre el efectivo físico de la caja. */
 public class MedioPago {
     private int id;
     private String descripcion;
@@ -17,7 +18,7 @@ public class MedioPago {
         this.afectaCajaFisica = afectaCajaFisica;
     }
 
-    // Evalúa si el medio de pago está habilitado para operar hoy
+    /** Indica si la fecha actual está dentro del período de vigencia configurado. */
     public boolean isVigente() {
         LocalDate hoy = LocalDate.now();
         boolean desdeValido = (fechaDesde != null) && (!hoy.isBefore(fechaDesde));
@@ -25,7 +26,7 @@ public class MedioPago {
         return desdeValido && hastaValido;
     }
 
-    // Getters y Setters
+    // Acceso a los datos del medio de pago.
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -43,6 +44,6 @@ public class MedioPago {
 
     @Override
     public String toString() {
-        return descripcion; // Permite cargar directamente el objeto en un ComboBox de JavaFX
+        return descripcion; // JavaFX usa este texto al mostrar el objeto en un ComboBox.
     }
 }

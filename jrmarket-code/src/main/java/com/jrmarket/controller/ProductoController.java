@@ -22,7 +22,9 @@ import com.jrmarket.model.Marca;
 import com.jrmarket.model.Producto;
 import com.jrmarket.model.TipoProducto;
 import com.jrmarket.util.FormatoImporte;
+import com.jrmarket.model.Usuario;
 
+/** Presenta el catálogo en modo consulta/ABM o como selector para venta y compra. */
 public class ProductoController implements Initializable {
 
     @FXML private Label lblTituloVentana;
@@ -58,7 +60,9 @@ public class ProductoController implements Initializable {
     private double costoUnitarioSeleccionado;
     private boolean itemConfirmado = false;
     private boolean modoSeleccionCompra;
+    private Usuario usuarioActual;
 
+    /** Configura filtros, columnas y controles compartidos entre los modos del catálogo. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         spnCantidadModal.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1));
@@ -82,9 +86,11 @@ public class ProductoController implements Initializable {
 
         tblProductos.getSelectionModel().selectedItemProperty().addListener((obs, ant, selec) -> {
             boolean hay = (selec != null);
+            boolean puedeGestionarProductos = usuarioActual != null && usuarioActual.tienePermiso(com.jrmarket.model.Permiso.GESTION_PRODUCTOS);
+
             btnAgregarVenta.setDisable(!hay);
-            btnModificar.setDisable(!hay);
-            btnBaja.setDisable(!hay);
+            btnModificar.setDisable(!hay || !puedeGestionarProductos);
+            btnBaja.setDisable(!hay || !puedeGestionarProductos);
             if (selec != null && modoSeleccionCompra) {
                 txtCostoUnitarioModal.setText(Double.toString(selec.getPrecioCosto()));
             }
@@ -93,6 +99,7 @@ public class ProductoController implements Initializable {
         setModoSeleccionVenta(false);
     }
 
+    /** Comparte la lista original para que los cambios se reflejen en los demás módulos. */
     public void setCatalogo(List<Producto> catalogo) {
         this.listaProductos = FXCollections.observableList(catalogo);
         this.listaFiltrada = new FilteredList<>(listaProductos, p -> true);
@@ -101,6 +108,7 @@ public class ProductoController implements Initializable {
         actualizarContador();
     }
 
+    /** Precarga el filtro recibido desde Ventas o Compras. */
     public void setBusquedaInicial(String busqueda) {
         txtBusqueda.setText(busqueda == null ? "" : busqueda);
         filtrarProductos();
@@ -117,6 +125,23 @@ public class ProductoController implements Initializable {
         configurarModoSeleccion(modoCompraActivo, "Compras");
     }
 
+    /**
+     * Recibe el operador y habilita las acciones de administración solo si posee
+     * el permiso específico de gestión del catálogo.
+     */
+    public void setUsuarioActual(Usuario usuario) {
+        this.usuarioActual = usuario;
+        boolean puedeGestionarProductos = usuario != null && usuario.tienePermiso(com.jrmarket.model.Permiso.GESTION_PRODUCTOS);
+
+        boxAccionesABML.setVisible(puedeGestionarProductos);
+        boxAccionesABML.setManaged(puedeGestionarProductos);
+
+        if (!puedeGestionarProductos) {
+            lblTituloVentana.setText("JRMARKET v1.0 | Catálogo General de Productos (Solo Consulta)");
+        }
+    }
+
+    /** Muestra las acciones apropiadas para ABM o selección de un artículo. */
     private void configurarModoSeleccion(boolean modoSeleccionActivo, String origen) {
         boxSeleccionVenta.setVisible(modoSeleccionActivo);
         boxSeleccionVenta.setManaged(modoSeleccionActivo);
@@ -131,6 +156,7 @@ public class ProductoController implements Initializable {
     }
 
     @FXML
+    /** Combina el texto rápido con el rubro elegido y omite productos inactivos. */
     private void filtrarProductos() {
         if (listaFiltrada == null) return;
         String texto = txtBusqueda.getText().trim().toLowerCase();
@@ -153,9 +179,18 @@ public class ProductoController implements Initializable {
         lblTotalRegistros.setText("Total: " + (listaFiltrada != null ? listaFiltrada.size() : 0) + " artículos");
     }
 
+    private boolean esAdministrador() {
+        return usuarioActual != null && usuarioActual.getRol() != null 
+                && "ADMINISTRADOR".equalsIgnoreCase(usuarioActual.getRol().getNombre());
+    }
+    
     @FXML
     private void nuevoProducto() {
         Producto nuevo = mostrarFormularioProducto(null);
+        if (!esAdministrador()) {
+            mostrarAlerta("Acceso Denegado", "Solo el Administrador puede registrar nuevos productos.");
+            return;
+        }
         if (nuevo != null) {
             listaProductos.add(nuevo);
             filtrarProductos();
@@ -164,6 +199,10 @@ public class ProductoController implements Initializable {
 
     @FXML
     private void modificarProducto() {
+        if (!esAdministrador()) {
+            mostrarAlerta("Acceso Denegado", "Solo el Administrador puede modificar productos.");
+            return;
+        }
         Producto seleccionado = tblProductos.getSelectionModel().getSelectedItem();
         if (seleccionado != null && mostrarFormularioProducto(seleccionado) != null) {
             filtrarProductos();
@@ -171,6 +210,27 @@ public class ProductoController implements Initializable {
         }
     }
 
+    @FXML
+    /** Realiza una baja lógica para conservar el producto en el historial del catálogo. */
+    private void darDeBajaProducto() {
+        if (!esAdministrador()) {
+            mostrarAlerta("Acceso Denegado", "Solo el Administrador puede dar de baja productos.");
+            return;
+        }
+        Producto sel = tblProductos.getSelectionModel().getSelectedItem();
+        if (sel != null) {
+            Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION,
+                "¿Está seguro de que desea dar de baja el producto seleccionado?",
+                ButtonType.OK, ButtonType.CANCEL);
+            if (confirmacion.showAndWait().orElse(ButtonType.CANCEL).equals(ButtonType.OK)) {
+                sel.setEstado(false);
+                sel.setFechaHasta(LocalDate.now().toString());
+                filtrarProductos();
+            }
+        }
+    }
+
+    /** Construye y valida el formulario usado tanto para alta como para modificación. */
     private Producto mostrarFormularioProducto(Producto original) {
         Dialog<ButtonType> dialogo = new Dialog<>();
         dialogo.setTitle(original == null ? "Nuevo producto" : "Modificar producto");
@@ -257,20 +317,7 @@ public class ProductoController implements Initializable {
         }
     }
 
-    @FXML
-    private void darDeBajaProducto() {
-        Producto sel = tblProductos.getSelectionModel().getSelectedItem();
-        if (sel != null) {
-            Alert confirmacion = new Alert(Alert.AlertType.CONFIRMATION,
-                "¿Está seguro de que desea dar de baja el producto seleccionado?",
-                ButtonType.OK, ButtonType.CANCEL);
-            if (confirmacion.showAndWait().orElse(ButtonType.CANCEL).equals(ButtonType.OK)) {
-                sel.setEstado(false);
-                sel.setFechaHasta(LocalDate.now().toString());
-                filtrarProductos();
-            }
-        }
-    }
+    
 
     private void mostrarAlerta(String titulo, String mensaje) {
         Alert alerta = new Alert(Alert.AlertType.WARNING);
@@ -280,6 +327,7 @@ public class ProductoController implements Initializable {
     }
 
     @FXML
+    /** Devuelve al módulo que abrió el selector el producto y sus datos de selección. */
     private void agregarYVolver() {
         Producto sel = tblProductos.getSelectionModel().getSelectedItem();
         if (sel != null) {
@@ -312,4 +360,5 @@ public class ProductoController implements Initializable {
     public int getCantidadSeleccionada() { return cantidadSeleccionada; }
     public double getCostoUnitarioSeleccionado() { return costoUnitarioSeleccionado; }
     public boolean isItemConfirmado() { return itemConfirmado; }
+
 }

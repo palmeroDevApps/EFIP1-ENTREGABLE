@@ -15,6 +15,7 @@ import com.jrmarket.model.TurnoCaja;
 import com.jrmarket.model.Usuario;
 import com.jrmarket.util.FormatoImporte;
 
+/** Presenta el balance del turno y coordina su arqueo y cierre. */
 public class CierreTurnoController implements Initializable {
 
     @FXML private Label lblOperador;
@@ -46,9 +47,11 @@ public class CierreTurnoController implements Initializable {
     private TurnoCaja turnoActual;
     private Usuario operador;
 
+    /** Los datos del formulario se cargan al recibir el turno desde el menú. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {}
 
+    /** Muestra los totales del sistema y habilita el arqueo según los permisos. */
     public void inicializarContexto(Usuario usuario, TurnoCaja turno) {
         this.operador = usuario;
         this.turnoActual = turno;
@@ -73,6 +76,7 @@ public class CierreTurnoController implements Initializable {
     }
 
     @FXML
+    /** Compara efectivo y transferencias declaradas con los valores del turno. */
     private void calcularConciliacion() {
         try {
             double efReal = txtEfectivoReal.getText().isEmpty() ? 0.0 : Double.parseDouble(txtEfectivoReal.getText());
@@ -96,6 +100,7 @@ public class CierreTurnoController implements Initializable {
     }
 
     @FXML
+    /** Registra la hora de cierre y bloquea los campos del arqueo completado. */
     private void confirmarCierreTurno() {
         String fechaCierre = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         turnoActual.setFechaHoraCierre(fechaCierre);
@@ -113,6 +118,7 @@ public class CierreTurnoController implements Initializable {
     }
 
     @FXML
+    /** Limpia los importes ingresados y vuelve a calcular la conciliación. */
     private void cancelarCierre() {
         txtEfectivoReal.clear();
         txtTransferenciaReal.clear();

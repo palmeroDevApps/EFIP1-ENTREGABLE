@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Asociación entre un rol y un permiso concreto del sistema. */
 public class RolPermiso implements Serializable {
     private int idRolPermiso;
     private String fechaHora;

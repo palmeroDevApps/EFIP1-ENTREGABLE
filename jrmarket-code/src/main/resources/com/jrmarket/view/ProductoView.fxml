@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
+<!-- Catálogo compartido entre consulta/ABM y los selectores de Ventas y Compras. -->
 <BorderPane prefHeight="650.0" prefWidth="980.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.ProductoController">
    
    <!-- CABECERA DE CATÁLOGO -->
@@ -85,7 +86,7 @@
                </children>
             </HBox>
 
-            <!-- PANEL 2: CONTROLES DE VENTA (SE ACTIVAN CUANDO SE ABRE DESDE EL MOSTRADOR CON F4) -->
+            <!-- Panel selector: la cantidad siempre se solicita aquí; Compras habilita además el costo unitario. -->
             <HBox fx:id="boxSeleccionVenta" alignment="CENTER_LEFT" spacing="12.0">
                <children>
                   <Label text="Cantidad:">

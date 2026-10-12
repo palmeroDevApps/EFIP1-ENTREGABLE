@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Renglón vendido; conserva precio y costo históricos aunque luego cambie el producto. */
 public class DetalleVenta implements Serializable {
     private int idDetalleVenta;
     private int cantidad;
@@ -22,6 +23,7 @@ public class DetalleVenta implements Serializable {
         this.subtotal = calcularSubtotal();
     }
 
+    /** Calcula cantidad por precio efectivamente cobrado. */
     public double calcularSubtotal() {
         this.subtotal = this.cantidad * this.precioCobrado;
         return this.subtotal;

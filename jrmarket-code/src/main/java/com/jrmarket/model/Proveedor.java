@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Mayorista que suministra la mercadería registrada en las compras. */
 public class Proveedor implements Serializable {
     private int idProveedor;
     private String razonSocial;
