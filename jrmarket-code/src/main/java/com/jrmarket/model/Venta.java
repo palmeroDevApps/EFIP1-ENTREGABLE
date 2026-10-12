@@ -45,6 +45,7 @@ public class Venta extends Comprobante {
                 cantidadAcumulada = Math.addExact(cantidadAcumulada, detalle.getCantidad());
             }
         }
+        
         if (!p.validarDisponibilidad(cantidadAcumulada)) {
             throw new IllegalArgumentException("La cantidad solicitada supera el stock disponible o el producto está inactivo.");
         }

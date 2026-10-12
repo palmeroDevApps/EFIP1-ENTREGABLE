@@ -93,7 +93,7 @@ public class LoginController implements Initializable {
         usuariosRegistrados.add(new Usuario(1, "cristian", hashClaveDemo, "Cristian Palmero", true, admin));
         usuariosRegistrados.add(new Usuario(2, "sofia", hashClaveDemo, "Sofía Martinez", true, vendedor));
         usuariosRegistrados.add(new Usuario(3, "lucas", hashClaveDemo, "Lucas Gómez", true, repositor));
-        usuariosRegistrados.add(new Usuario(4, "estefania", hashClaveDemo, "Usuario Inactivo de Prueba", false, vendedor));
+        usuariosRegistrados.add(new Usuario(4, "estefania", hashClaveDemo, "Estefania Pacheco", false, vendedor));
     }
 
     @FXML

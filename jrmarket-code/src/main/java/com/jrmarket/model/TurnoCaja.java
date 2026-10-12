@@ -71,13 +71,6 @@ public class TurnoCaja implements Serializable {
         }
     }
 
-    /** Conciliación simple del efectivo para compatibilidad con llamadas anteriores. */
-    public void conciliarSaldo(double montoContado, String obs) {
-        this.saldoRealFisico = montoContado;
-        this.observaciones = obs;
-        this.diferencia = montoContado - this.saldoTeoricoSistema;
-    }
-
     /** Compara efectivo y transferencias contadas contra los totales del sistema. */
     public void conciliarSaldo(double efectivoContado, double transferenciasVerificadas, String obs) {
         if (!Double.isFinite(efectivoContado) || !Double.isFinite(transferenciasVerificadas)
