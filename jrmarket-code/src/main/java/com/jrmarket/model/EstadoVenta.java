@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Estado del ciclo de vida de una venta, por ejemplo cobrada o anulada. */
 public class EstadoVenta implements Serializable {
     private int idEstadoVenta;
     private String nombre;

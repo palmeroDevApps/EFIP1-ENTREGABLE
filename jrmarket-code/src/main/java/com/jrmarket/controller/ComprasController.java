@@ -29,6 +29,7 @@ import java.util.ResourceBundle;
 import com.jrmarket.model.*;
 import com.jrmarket.util.FormatoImporte;
 
+/** Controla las listas sugeridas y el registro de compras a mayoristas. */
 public class ComprasController implements Initializable {
 
     @FXML private Label lblOperador;
@@ -67,6 +68,7 @@ public class ComprasController implements Initializable {
     private ObservableList<DetalleCompra> itemsCompraObservable = FXCollections.observableArrayList();
     private ObservableList<Producto> listaFaltantesObservable = FXCollections.observableArrayList();
 
+    /** Configura ambas tablas y permite corregir costos antes de confirmar la compra. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         // Enlace a atributos de modelos
@@ -131,6 +133,7 @@ public class ComprasController implements Initializable {
         tblDetalleCompra.setItems(itemsCompraObservable);
     }
 
+    /** Recibe del menú los datos en memoria usados durante la sesión. */
     public void inicializarContexto(Usuario usuario, List<Producto> catalogo, List<Proveedor> proveedores) {
         this.operador = usuario;
         this.catalogoCompartido = catalogo;
@@ -143,6 +146,7 @@ public class ComprasController implements Initializable {
         iniciarNuevaCompra();
     }
 
+    /** Prepara una cabecera y un detalle vacíos para el siguiente comprobante. */
     private void iniciarNuevaCompra() {
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         this.compraActual = new Compra(1, "", fecha, operador, cbProveedor.getValue());
@@ -151,6 +155,7 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
+    /** Filtra el catálogo según el mínimo configurado para cada producto. */
     private void generarListaSugeridos() {
         listaFaltantesObservable.clear();
         if (catalogoCompartido == null) return;
@@ -164,10 +169,12 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
+    /** Abre el selector de productos con el texto de búsqueda ingresado. */
     private void agregarPorCodigo() {
         abrirExploradorProductos(txtCodigoBarras.getText().trim());
     }
 
+    /** Refleja el total calculado y habilita confirmar cuando hay renglones. */
     private void actualizarTotalUI() {
         double total = compraActual.calcularTotal();
         lblTotalCompra.setText("$ " + FormatoImporte.formatear(total));
@@ -175,6 +182,7 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
+    /** Valida el comprobante y aplica stock y costo solo al confirmar la compra. */
     private void confirmarIngresoMercaderia() {
         String nro = txtNroComprobante.getText().trim();
         if (nro.isEmpty()) {
@@ -209,6 +217,7 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
+    /** Quita el renglón seleccionado y vuelve a calcular el total. */
     private void quitarItemSeleccionado() {
         DetalleCompra sel = tblDetalleCompra.getSelectionModel().getSelectedItem();
         if (sel != null) {
@@ -229,6 +238,7 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
+    /** Genera una salida impresa con las cantidades sugeridas de reposición. */
     private void imprimirListaFaltantes() {
         if (listaFaltantesObservable.isEmpty()) {
             Alert alerta = new Alert(Alert.AlertType.INFORMATION);
@@ -291,6 +301,7 @@ public class ComprasController implements Initializable {
         abrirExploradorProductos("");
     }
 
+    /** Muestra el selector modal en modo compra y devuelve costo y cantidad elegidos. */
     private void abrirExploradorProductos(String filtro) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/jrmarket/view/ProductoView.fxml"));
@@ -317,6 +328,7 @@ public class ComprasController implements Initializable {
         }
     }
 
+    /** Agrega al comprobante los datos confirmados en el selector de productos. */
     private void agregarProductoSeleccionado(Producto producto, int cantidad, double costo) {
         try {
             compraActual.agregarDetalle(producto, cantidad, costo);

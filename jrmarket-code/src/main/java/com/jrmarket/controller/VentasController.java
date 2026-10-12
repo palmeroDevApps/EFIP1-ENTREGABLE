@@ -26,6 +26,7 @@ import java.util.ResourceBundle;
 import com.jrmarket.model.*;
 import com.jrmarket.util.FormatoImporte;
 
+/** Controla el mostrador, la apertura manual del turno y el cobro de ventas. */
 public class VentasController implements Initializable {
 
     @FXML private Label lblOperador;
@@ -64,6 +65,7 @@ public class VentasController implements Initializable {
     private Venta ventaActual;
     private ObservableList<DetalleVenta> itemsVentaObservable = FXCollections.observableArrayList();
 
+    /** Configura los controles y enlaza las columnas con los datos del modelo. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         cbMedioPago.setItems(FXCollections.observableArrayList("Efectivo", "Transferencia / QR"));
@@ -110,6 +112,7 @@ public class VentasController implements Initializable {
         tblDetalleVenta.setItems(itemsVentaObservable);
     }
 
+    /** Recibe del menú el usuario y las colecciones compartidas de esta sesión. */
     public void inicializarContexto(Usuario usuario, List<TurnoCaja> turnos, List<Producto> catalogo) {
         this.operadorActual = usuario;
         this.turnosCaja = turnos;
@@ -120,6 +123,7 @@ public class VentasController implements Initializable {
         iniciarNuevaVenta();
     }
 
+    /** Busca desde el turno más reciente para mantener el orden de apertura. */
     private TurnoCaja buscarTurnoAbierto() {
         for (int indice = turnosCaja.size() - 1; indice >= 0; indice--) {
             TurnoCaja turno = turnosCaja.get(indice);
@@ -128,6 +132,7 @@ public class VentasController implements Initializable {
         return null;
     }
 
+    /** Actualiza el encabezado y bloquea ventas cuando no existe un turno abierto. */
     private boolean refrescarEstadoCaja() {
         turnoActivo = buscarTurnoAbierto();
         boolean turnoAbierto = turnoActivo != null;
@@ -151,6 +156,7 @@ public class VentasController implements Initializable {
     }
 
     @FXML
+    /** Solicita el efectivo contado e inicia un nuevo turno en memoria. */
     private void abrirTurno() {
         if (refrescarEstadoCaja()) return;
 
@@ -180,6 +186,7 @@ public class VentasController implements Initializable {
         }
     }
 
+    /** Crea el comprobante vacío asociado al turno activo. */
     private void iniciarNuevaVenta() {
         if (turnoActivo == null || !"ABIERTO".equalsIgnoreCase(turnoActivo.getEstado())) {
             ventaActual = null;
@@ -195,6 +202,7 @@ public class VentasController implements Initializable {
         actualizarTotalesUI();
     }
 
+    /** Sincroniza el mostrador cuando se vuelve de la ventana de cierre de caja. */
     public void observarEstadoTurno(Stage stage) {
         stage.focusedProperty().addListener((observacion, focoAnterior, tieneFoco) -> {
             if (tieneFoco) {
@@ -208,6 +216,7 @@ public class VentasController implements Initializable {
         });
     }
     @FXML
+    /** Agrega por código exacto o abre el selector con el texto escrito como filtro. */
     private void agregarPorCodigo() {
         if (!validarTurnoAbierto()) return;
         String criterio = txtCodigoBarras.getText().trim();
@@ -235,6 +244,7 @@ public class VentasController implements Initializable {
         abrirExploradorProductos("");
     }
 
+    /** Abre el catálogo modal y recibe el producto y cantidad elegidos. */
     private void abrirExploradorProductos(String filtro) {
         if (!validarTurnoAbierto()) return;
         try {
@@ -260,6 +270,7 @@ public class VentasController implements Initializable {
         }
     }
 
+    /** Valida stock y refleja en la tabla el renglón agregado al modelo. */
     private void agregarProductoAVenta(Producto producto, int cantidad) {
         if (!validarTurnoAbierto()) return;
         if (!producto.validarDisponibilidad(cantidad)) {
@@ -278,6 +289,7 @@ public class VentasController implements Initializable {
         }
     }
 
+    /** Mantiene total, vuelto y disponibilidad del botón según el contenido actual. */
     private void actualizarTotalesUI() {
         if (ventaActual == null) {
             lblTotalPagar.setText("$ " + FormatoImporte.formatear(0.0));
@@ -292,6 +304,7 @@ public class VentasController implements Initializable {
     }
 
     @FXML
+    /** Actualiza el vuelto o valida el comprobante según el medio seleccionado. */
     private void calcularVuelto() {
         if (ventaActual == null) {
             btnConfirmarVenta.setDisable(true);
@@ -353,6 +366,7 @@ public class VentasController implements Initializable {
     }
 
     @FXML
+    /** Pide al modelo validar pago, turno y stock antes de confirmar la venta. */
     private void confirmarVenta() {
         if (!validarTurnoAbierto()) return;
         ventaActual.setMedioPago(cbMedioPago.getValue());
@@ -391,6 +405,7 @@ public class VentasController implements Initializable {
         alert.showAndWait();
     }
 
+    /** Evita que un handler registre operaciones luego del cierre del turno. */
     private boolean validarTurnoAbierto() {
         if (refrescarEstadoCaja()) return true;
         mostrarAlerta("Caja cerrada", "Abra un turno de caja antes de registrar ventas.");

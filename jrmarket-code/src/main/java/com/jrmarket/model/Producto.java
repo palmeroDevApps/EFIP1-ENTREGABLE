@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Producto del catálogo con precios, existencias y clasificación comercial. */
 public class Producto implements Serializable {
     private int idProducto;
     private String codigoBarras;
@@ -42,6 +43,7 @@ public class Producto implements Serializable {
         this.tipoProducto = tipoProducto;
     }
 
+    /** Suma o resta existencias y evita que el stock resultante sea negativo. */
     public void actualizarStock(int cantidad) {
         int nuevoStock = Math.addExact(this.stockActual, cantidad);
         if (nuevoStock < 0) {
@@ -50,10 +52,12 @@ public class Producto implements Serializable {
         this.stockActual = nuevoStock;
     }
 
+    /** Solo permite operar con productos activos y cantidades positivas disponibles. */
     public boolean validarDisponibilidad(int cant) {
         return this.estado && this.stockActual >= cant && cant > 0;
     }
 
+    /** Indica si las existencias alcanzaron o bajaron del mínimo de reposición. */
     public boolean esStockCritico() {
         return this.estado && this.stockActual <= this.stockMinimo;
     }

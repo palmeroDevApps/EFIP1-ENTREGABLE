@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Venta de mostrador: reúne renglones, forma de pago, estado y turno asociado. */
 public class Venta extends Comprobante {
     private String medioPago;
     private double montoRecibido;
@@ -30,6 +31,7 @@ public class Venta extends Comprobante {
         this.historiales = new ArrayList<>();
     }
 
+    /** Agrega un producto al detalle o acumula cantidad en su renglón existente. */
     public void agregarItem(Producto p, int cantidad) {
         if (p == null) {
             throw new IllegalArgumentException("El producto es obligatorio.");
@@ -59,11 +61,13 @@ public class Venta extends Comprobante {
         calcularTotal();
     }
 
+    /** Quita un renglón y vuelve a calcular el total de la venta. */
     public void quitarItem(DetalleVenta item) {
         this.detalles.remove(item);
         calcularTotal();
     }
 
+    /** Corrige una cantidad sin permitir que el total del producto supere el stock. */
     public void actualizarCantidad(DetalleVenta item, int cantidad) {
         if (item == null || !detalles.contains(item) || cantidad <= 0) {
             throw new IllegalArgumentException("Seleccione un renglón e ingrese una cantidad mayor que cero.");
@@ -84,6 +88,7 @@ public class Venta extends Comprobante {
         calcularTotal();
     }
 
+    /** Suma los subtotales de los renglones y guarda el total calculado. */
     @Override
     public double calcularTotal() {
         double acumulador = 0.0;
@@ -94,12 +99,14 @@ public class Venta extends Comprobante {
         return this.total;
     }
 
+    /** Registra lo recibido en efectivo y calcula el vuelto para el cliente. */
     public double liquidarVuelto(double montoRecibido) {
         this.montoRecibido = montoRecibido;
         this.vuelto = montoRecibido - this.total;
         return this.vuelto;
     }
 
+    /** Cambia el estado actual y agrega una entrada al historial de la venta. */
     public void cambiarEstado(EstadoVenta nuevoEstado, String obs) {
         this.estadoActual = nuevoEstado;
         HistorialEstadoVenta h = new HistorialEstadoVenta(
@@ -115,12 +122,14 @@ public class Venta extends Comprobante {
 
     public EstadoVenta getEstadoActual() { return estadoActual; }
 
+    /** Imputa esta venta al turno de caja asociado. */
     public void registrarCobro() {
         if (this.turnoCaja != null) {
             this.turnoCaja.acumularVenta(this);
         }
     }
 
+    /** Valida pago, turno y stock; luego descuenta existencias y registra el cobro. */
     public void confirmarVenta() {
         if (detalles.isEmpty()) {
             throw new IllegalStateException("La venta debe tener al menos un producto.");
@@ -163,6 +172,7 @@ public class Venta extends Comprobante {
         registrarCobro();
     }
 
+    /** Reconoce las variantes del nombre de efectivo usadas por la interfaz. */
     private boolean esPagoEfectivo() {
         return medioPago != null && medioPago.toUpperCase().contains("EFECTIVO");
     }

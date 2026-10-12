@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Movimiento que conserva el estado asignado a una venta y su observación. */
 public class HistorialEstadoVenta implements Serializable {
     private int idHistorial;
     private String fechaDesde;
@@ -22,8 +23,10 @@ public class HistorialEstadoVenta implements Serializable {
         this.estadoVenta = estadoVenta;
     }
 
+    /** Alias empleado por la interfaz para mostrar la fecha del movimiento. */
     public String getFechaHora() { return fechaDesde; }
 
+    /** Estado asociado a esta entrada del historial. */
     public EstadoVenta getEstado() { return estadoVenta; }
 
     public int getIdHistorial() { return idHistorial; }

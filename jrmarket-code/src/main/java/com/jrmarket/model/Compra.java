@@ -3,6 +3,7 @@ package com.jrmarket.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Compra a un proveedor y conjunto de renglones de mercadería recibida. */
 public class Compra extends Comprobante {
     private Proveedor proveedor;
     private List<DetalleCompra> detalles;
@@ -18,6 +19,7 @@ public class Compra extends Comprobante {
         this.detalles = new ArrayList<>();
     }
 
+    /** Agrega un producto, cantidad y costo unitario al comprobante de compra. */
     public void agregarDetalle(Producto p, int cant, double costo) {
         if (p == null || !p.isEstado() || cant <= 0 || costo < 0.0 || !Double.isFinite(costo)) {
             throw new IllegalArgumentException("Producto, cantidad y costo deben ser válidos.");
@@ -28,11 +30,13 @@ public class Compra extends Comprobante {
         calcularTotal();
     }
 
+    /** Quita un renglón y actualiza el total de la compra. */
     public void quitarDetalle(DetalleCompra item) {
         this.detalles.remove(item);
         calcularTotal();
     }
 
+    /** Permite corregir el costo del renglón antes de confirmar el ingreso. */
     public void actualizarCostoUnitario(DetalleCompra detalle, double costoUnitario) {
         if (detalle == null || !detalles.contains(detalle)
                 || costoUnitario < 0.0 || !Double.isFinite(costoUnitario)) {
@@ -42,6 +46,7 @@ public class Compra extends Comprobante {
         calcularTotal();
     }
 
+    /** Recalcula el total a partir de los subtotales de compra. */
     @Override
     public double calcularTotal() {
         double acumulado = 0.0;
@@ -52,6 +57,7 @@ public class Compra extends Comprobante {
         return this.total;
     }
 
+    /** Aplica la compra al inventario: suma stock y actualiza el costo de reposición. */
     public void confirmarIngresoMercaderia() {
         if (detalles.isEmpty()) {
             throw new IllegalStateException("La compra debe tener al menos un producto.");

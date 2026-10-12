@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
+<!-- Mostrador de venta. El controlador deshabilita las operaciones hasta abrir la caja. -->
 <BorderPane prefHeight="740.0" prefWidth="1140.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.VentasController">
    
    <!-- CABECERA INSTITUCIONAL -->
@@ -56,6 +57,7 @@
 
    <!-- CUERPO PRINCIPAL -->
    <center>
+      <!-- El panel completo se bloquea mientras el turno de caja está cerrado. -->
       <VBox fx:id="boxOperacionesVenta" spacing="12.0" BorderPane.alignment="CENTER">
          <padding>
             <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Rol de usuario y colección de permisos habilitados para sus operaciones. */
 public class Rol implements Serializable {
     private int idRol;
     private String nombre;

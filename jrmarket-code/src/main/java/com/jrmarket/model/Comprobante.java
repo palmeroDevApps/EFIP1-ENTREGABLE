@@ -2,6 +2,7 @@ package com.jrmarket.model;
 
 import java.io.Serializable;
 
+/** Datos compartidos por comprobantes de venta y de compra. */
 public abstract class Comprobante implements Serializable {
     protected int idComprobante;
     protected String nroComprobante;
@@ -19,6 +20,7 @@ public abstract class Comprobante implements Serializable {
         this.total = 0.0;
     }
 
+    /** Cada tipo de comprobante define cómo sumar los importes de su detalle. */
     public abstract double calcularTotal();
 
     public int getIdComprobante() { return idComprobante; }

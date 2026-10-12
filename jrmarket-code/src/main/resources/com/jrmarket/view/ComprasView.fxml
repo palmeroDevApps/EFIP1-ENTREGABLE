@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
+<!-- Vista de reposición: genera sugerencias y registra comprobantes de compra. -->
 <BorderPane prefHeight="740.0" prefWidth="1140.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.jrmarket.controller.ComprasController">
    
    <!-- CABECERA DE MÓDULO -->

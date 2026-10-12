@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Estado y balance de una sesión de caja abierta por un usuario. */
 public class TurnoCaja implements Serializable {
     private int idTurno;
     private String fechaHoraApertura;
@@ -21,6 +22,7 @@ public class TurnoCaja implements Serializable {
 
     public TurnoCaja() {
         this.ventas = new ArrayList<>();
+        // Un turno debe abrirse explícitamente después de contar el fondo inicial.
         this.estado = "CERRADO";
     }
 
@@ -30,6 +32,7 @@ public class TurnoCaja implements Serializable {
         this.usuario = usuario;
     }
 
+    /** Inicia el turno con el efectivo contado y reinicia los acumuladores del turno. */
     public void abrirTurno(double montoBase, String fechaHoraApertura) {
         if (!"CERRADO".equalsIgnoreCase(this.estado)) {
             throw new IllegalStateException("El turno ya está abierto.");
@@ -52,6 +55,7 @@ public class TurnoCaja implements Serializable {
         this.estado = "ABIERTO";
     }
 
+    /** Acumula la venta una sola vez y separa efectivo de transferencias. */
     public void acumularVenta(Venta v) {
         if (v == null) return;
         if (!"ABIERTO".equalsIgnoreCase(this.estado)) {
@@ -67,12 +71,14 @@ public class TurnoCaja implements Serializable {
         }
     }
 
+    /** Conciliación simple del efectivo para compatibilidad con llamadas anteriores. */
     public void conciliarSaldo(double montoContado, String obs) {
         this.saldoRealFisico = montoContado;
         this.observaciones = obs;
         this.diferencia = montoContado - this.saldoTeoricoSistema;
     }
 
+    /** Compara efectivo y transferencias contadas contra los totales del sistema. */
     public void conciliarSaldo(double efectivoContado, double transferenciasVerificadas, String obs) {
         if (!Double.isFinite(efectivoContado) || !Double.isFinite(transferenciasVerificadas)
                 || efectivoContado < 0.0 || transferenciasVerificadas < 0.0) {
@@ -84,6 +90,7 @@ public class TurnoCaja implements Serializable {
             + transferenciasVerificadas - this.totalVentasTransferencia;
     }
 
+    /** Cambia el turno abierto a cerrado al finalizar la jornada del operador. */
     public void cerrarTurno() {
         if (!"ABIERTO".equalsIgnoreCase(this.estado)) {
             throw new IllegalStateException("El turno no está abierto.");
