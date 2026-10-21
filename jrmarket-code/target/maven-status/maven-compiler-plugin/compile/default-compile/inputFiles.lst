@@ -6,6 +6,8 @@ C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\controller\ProductoController.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\controller\UsuarioController.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\controller\VentasController.java
+C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\dao\ConexionBD.java
+C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\dao\JRMarketDAO.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\model\Compra.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\model\Comprobante.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\model\DetalleCompra.java
@@ -24,3 +26,4 @@ C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\model\Usuario.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\model\Venta.java
 C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\util\FormatoImporte.java
+C:\Users\crist\OneDrive\Documentos\Facultad S21\EFIP I\EFIP1-ENTREGABLE\jrmarket-code\src\main\java\com\jrmarket\util\GestorArchivos.java
