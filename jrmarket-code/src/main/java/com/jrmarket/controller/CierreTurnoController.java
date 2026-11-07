@@ -6,16 +6,20 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
 
+import com.jrmarket.dao.JRMarketDAO;
 import com.jrmarket.model.TurnoCaja;
 import com.jrmarket.model.Usuario;
 import com.jrmarket.util.FormatoImporte;
+import com.jrmarket.util.GestorArchivos;
 
-/** Presenta el balance del turno y coordina su arqueo y cierre. */
+/** Presenta el balance del turno y coordina su arqueo y cierre con persistencia en MySQL y archivo TXT. */
 public class CierreTurnoController implements Initializable {
 
     @FXML private Label lblOperador;
@@ -46,12 +50,11 @@ public class CierreTurnoController implements Initializable {
 
     private TurnoCaja turnoActual;
     private Usuario operador;
+    private final JRMarketDAO dao = new JRMarketDAO();
 
-    /** Los datos del formulario se cargan al recibir el turno desde el menú. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {}
 
-    /** Muestra los totales del sistema y habilita el arqueo según los permisos. */
     public void inicializarContexto(Usuario usuario, TurnoCaja turno) {
         this.operador = usuario;
         this.turnoActual = turno;
@@ -68,7 +71,6 @@ public class CierreTurnoController implements Initializable {
         lblCantidadTickets.setText(turno.getVentas().size() + " tickets emitidos");
         lblTotalFacturado.setText("$ " + FormatoImporte.formatear(turno.getTotalVentasEfectivo() + turno.getTotalVentasTransferencia()));
 
-        // Validación de permisos según el modelo Rol y Permiso
         boolean tienePermiso = usuario.tienePermiso("CIERRE_CAJA");
         panelArqueo.setDisable(!tienePermiso);
         boxAlertaRol.setVisible(!tienePermiso);
@@ -76,7 +78,6 @@ public class CierreTurnoController implements Initializable {
     }
 
     @FXML
-    /** Compara efectivo y transferencias declaradas con los valores del turno. */
     private void calcularConciliacion() {
         try {
             double efReal = txtEfectivoReal.getText().isEmpty() ? 0.0 : Double.parseDouble(txtEfectivoReal.getText());
@@ -100,11 +101,19 @@ public class CierreTurnoController implements Initializable {
     }
 
     @FXML
-    /** Registra la hora de cierre y bloquea los campos del arqueo completado. */
     private void confirmarCierreTurno() {
         String fechaCierre = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         turnoActual.setFechaHoraCierre(fechaCierre);
         turnoActual.cerrarTurno();
+
+        dao.cerrarTurnoCaja(turnoActual);
+        String infoArchivo = "";
+        try {
+            File reporte = GestorArchivos.exportarArqueoTurno(turnoActual);
+            infoArchivo = " (Exportado: " + reporte.getName() + ")";
+        } catch (IOException e) {
+            System.err.println("Error al exportar arqueo: " + e.getMessage());
+        }
 
         lblEstadoTurno.setText(turnoActual.getEstado());
         lblFechaCierre.setText("Cierre: " + fechaCierre);
@@ -114,11 +123,11 @@ public class CierreTurnoController implements Initializable {
         txtObservaciones.setDisable(true);
         btnConfirmarCierre.setDisable(true);
 
-        lblMensajeFeedback.setText("Turno cerrado con éxito. Saldo físico registrado: $ " + FormatoImporte.formatear(turnoActual.getSaldoRealFisico()));
+        lblMensajeFeedback.setText("Turno cerrado con éxito. Saldo físico registrado: $ "
+                + FormatoImporte.formatear(turnoActual.getSaldoRealFisico()) + infoArchivo);
     }
 
     @FXML
-    /** Limpia los importes ingresados y vuelve a calcular la conciliación. */
     private void cancelarCierre() {
         txtEfectivoReal.clear();
         txtTransferenciaReal.clear();

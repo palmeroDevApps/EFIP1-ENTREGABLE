@@ -16,17 +16,23 @@ import javafx.util.converter.IntegerStringConverter;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import com.jrmarket.dao.JRMarketDAO;
 import com.jrmarket.model.*;
 import com.jrmarket.util.FormatoImporte;
+import com.jrmarket.util.GestorArchivos;
 
-/** Controla el mostrador, la apertura manual del turno y el cobro de ventas. */
+/** Controla el mostrador, la apertura manual del turno y el cobro utilizando la entidad MedioPago. */
 public class VentasController implements Initializable {
 
     @FXML private Label lblOperador;
@@ -49,33 +55,32 @@ public class VentasController implements Initializable {
     @FXML private Button btnQuitarItem;
     @FXML private Button btnCancelarVenta;
     @FXML private Label lblTotalPagar;
-    @FXML private ComboBox<String> cbMedioPago;
+    @FXML private ComboBox<MedioPago> cbMedioPago;
     @FXML private TextField txtNroComprobante;
     @FXML private TextField txtPagaCon;
     @FXML private Label lblVuelto;
     @FXML private Button btnConfirmarVenta;
 
-    // Dependencias inyectadas desde MenuPrincipalController
     private Usuario operadorActual;
     private List<TurnoCaja> turnosCaja;
     private TurnoCaja turnoActivo;
     private List<Producto> catalogoCompartido;
 
-    // Entidad de negocio activa
     private Venta ventaActual;
     private ObservableList<DetalleVenta> itemsVentaObservable = FXCollections.observableArrayList();
+    private final JRMarketDAO dao = new JRMarketDAO();
 
-    /** Configura los controles y enlaza las columnas con los datos del modelo. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        cbMedioPago.setItems(FXCollections.observableArrayList("Efectivo", "Transferencia / QR"));
-        cbMedioPago.getSelectionModel().selectFirst();
+        cargarMediosPago();
         cbMedioPago.setOnAction(event -> calcularVuelto());
         txtNroComprobante.textProperty().addListener((obs, anterior, actual) -> {
-            if ("Transferencia / QR".equals(cbMedioPago.getValue())) calcularVuelto();
+            MedioPago medio = cbMedioPago.getValue();
+            if (medio != null && !medio.isAfectaCajaFisica()) {
+                calcularVuelto();
+            }
         });
 
-        // Enlace a los atributos de Producto y DetalleVenta
         colCodigo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProducto().getCodigoBarras()));
         colMarca.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProducto().getMarca().getNombre()));
         colDescripcion.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProducto().getDescripcion()));
@@ -112,7 +117,30 @@ public class VentasController implements Initializable {
         tblDetalleVenta.setItems(itemsVentaObservable);
     }
 
-    /** Recibe del menú el usuario y las colecciones compartidas de esta sesión. */
+    /**
+     * Obtiene los objetos MedioPago desde la base de datos MySQL y filtra aquellos vigentes.
+     */
+    private void cargarMediosPago() {
+        List<MedioPago> mediosBD = dao.consultarMediosPagoDisponibles();
+        List<MedioPago> mediosVigentes = new ArrayList<>();
+
+        Iterator<MedioPago> it = mediosBD.iterator();
+        while (it.hasNext()) {
+            MedioPago mp = it.next();
+            if (mp.isVigente()) {
+                mediosVigentes.add(mp);
+            }
+        }
+
+        if (mediosVigentes.isEmpty()) {
+            mediosVigentes.add(new MedioPago(1, "Efectivo", LocalDate.of(2026, 1, 1), null, true));
+            mediosVigentes.add(new MedioPago(2, "Transferencia / QR", LocalDate.of(2026, 1, 1), null, false));
+        }
+
+        cbMedioPago.setItems(FXCollections.observableArrayList(mediosVigentes));
+        cbMedioPago.getSelectionModel().selectFirst();
+    }
+
     public void inicializarContexto(Usuario usuario, List<TurnoCaja> turnos, List<Producto> catalogo) {
         this.operadorActual = usuario;
         this.turnosCaja = turnos;
@@ -123,7 +151,6 @@ public class VentasController implements Initializable {
         iniciarNuevaVenta();
     }
 
-    /** Busca desde el turno más reciente para mantener el orden de apertura. */
     private TurnoCaja buscarTurnoAbierto() {
         for (int indice = turnosCaja.size() - 1; indice >= 0; indice--) {
             TurnoCaja turno = turnosCaja.get(indice);
@@ -132,7 +159,6 @@ public class VentasController implements Initializable {
         return null;
     }
 
-    /** Actualiza el encabezado y bloquea ventas cuando no existe un turno abierto. */
     private boolean refrescarEstadoCaja() {
         turnoActivo = buscarTurnoAbierto();
         boolean turnoAbierto = turnoActivo != null;
@@ -156,7 +182,6 @@ public class VentasController implements Initializable {
     }
 
     @FXML
-    /** Solicita el efectivo contado e inicia un nuevo turno en memoria. */
     private void abrirTurno() {
         if (refrescarEstadoCaja()) return;
 
@@ -177,6 +202,7 @@ public class VentasController implements Initializable {
             String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             TurnoCaja nuevoTurno = new TurnoCaja(turnosCaja.size() + 1, operadorActual);
             nuevoTurno.abrirTurno(montoInicial, fecha);
+            dao.insertarTurnoCaja(nuevoTurno);
             turnosCaja.add(nuevoTurno);
             turnoActivo = nuevoTurno;
             refrescarEstadoCaja();
@@ -186,7 +212,6 @@ public class VentasController implements Initializable {
         }
     }
 
-    /** Crea el comprobante vacío asociado al turno activo. */
     private void iniciarNuevaVenta() {
         if (turnoActivo == null || !"ABIERTO".equalsIgnoreCase(turnoActivo.getEstado())) {
             ventaActual = null;
@@ -196,13 +221,14 @@ public class VentasController implements Initializable {
         }
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String ticket = "TK-0001-" + String.format("%05d", (int)(Math.random() * 90000) + 10000);
+        MedioPago medioInicial = cbMedioPago.getValue();
+        String descripcionMedio = medioInicial != null ? medioInicial.getDescripcion() : "";
 
-        this.ventaActual = new Venta(1, ticket, fecha, operadorActual, cbMedioPago.getValue(), turnoActivo);
+        this.ventaActual = new Venta(1, ticket, fecha, operadorActual, descripcionMedio, turnoActivo);
         itemsVentaObservable.clear();
         actualizarTotalesUI();
     }
 
-    /** Sincroniza el mostrador cuando se vuelve de la ventana de cierre de caja. */
     public void observarEstadoTurno(Stage stage) {
         stage.focusedProperty().addListener((observacion, focoAnterior, tieneFoco) -> {
             if (tieneFoco) {
@@ -215,15 +241,17 @@ public class VentasController implements Initializable {
             }
         });
     }
+
     @FXML
-    /** Agrega por código exacto o abre el selector con el texto escrito como filtro. */
     private void agregarPorCodigo() {
         if (!validarTurnoAbierto()) return;
         String criterio = txtCodigoBarras.getText().trim();
         if (criterio.isEmpty() || catalogoCompartido == null) return;
 
         Producto encontrado = null;
-        for (Producto p : catalogoCompartido) {
+        Iterator<Producto> it = catalogoCompartido.iterator();
+        while (it.hasNext()) {
+            Producto p = it.next();
             if (p.isEstado() && p.getCodigoBarras().equalsIgnoreCase(criterio)) {
                 encontrado = p;
                 break;
@@ -244,7 +272,6 @@ public class VentasController implements Initializable {
         abrirExploradorProductos("");
     }
 
-    /** Abre el catálogo modal y recibe el producto y cantidad elegidos. */
     private void abrirExploradorProductos(String filtro) {
         if (!validarTurnoAbierto()) return;
         try {
@@ -270,7 +297,6 @@ public class VentasController implements Initializable {
         }
     }
 
-    /** Valida stock y refleja en la tabla el renglón agregado al modelo. */
     private void agregarProductoAVenta(Producto producto, int cantidad) {
         if (!validarTurnoAbierto()) return;
         if (!producto.validarDisponibilidad(cantidad)) {
@@ -289,7 +315,6 @@ public class VentasController implements Initializable {
         }
     }
 
-    /** Mantiene total, vuelto y disponibilidad del botón según el contenido actual. */
     private void actualizarTotalesUI() {
         if (ventaActual == null) {
             lblTotalPagar.setText("$ " + FormatoImporte.formatear(0.0));
@@ -304,13 +329,14 @@ public class VentasController implements Initializable {
     }
 
     @FXML
-    /** Actualiza el vuelto o valida el comprobante según el medio seleccionado. */
+    /** Evalúa el objeto MedioPago seleccionado mediante su método isAfectaCajaFisica(). */
     private void calcularVuelto() {
         if (ventaActual == null) {
             btnConfirmarVenta.setDisable(true);
             return;
         }
-        if ("Transferencia / QR".equals(cbMedioPago.getValue())) {
+        MedioPago medioSeleccionado = cbMedioPago.getValue();
+        if (medioSeleccionado != null && !medioSeleccionado.isAfectaCajaFisica()) {
             lblVuelto.setText("$ 0,00");
             txtPagaCon.setDisable(true);
             txtNroComprobante.setDisable(false);
@@ -366,12 +392,17 @@ public class VentasController implements Initializable {
     }
 
     @FXML
-    /** Pide al modelo validar pago, turno y stock antes de confirmar la venta. */
     private void confirmarVenta() {
         if (!validarTurnoAbierto()) return;
-        ventaActual.setMedioPago(cbMedioPago.getValue());
+        MedioPago medioSeleccionado = cbMedioPago.getValue();
+        if (medioSeleccionado == null || !medioSeleccionado.isVigente()) {
+            mostrarAlerta("Medio de pago inválido", "Seleccione un medio de pago vigente.");
+            return;
+        }
+
+        ventaActual.setMedioPago(medioSeleccionado.getDescripcion());
         ventaActual.setComprobantePago(txtNroComprobante.getText().trim());
-        if (cbMedioPago.getValue() != null && cbMedioPago.getValue().contains("Efectivo")) {
+        if (medioSeleccionado.isAfectaCajaFisica()) {
             try {
                 ventaActual.liquidarVuelto(Double.parseDouble(txtPagaCon.getText().trim()));
             } catch (NumberFormatException e) {
@@ -382,17 +413,30 @@ public class VentasController implements Initializable {
 
         try {
             ventaActual.confirmarVenta();
+            EstadoVenta estadoCobrada = dao.consultarEstadoVentaPorNombre("Cobrada");
+            ventaActual.setEstadoActual(estadoCobrada);
         } catch (IllegalArgumentException | IllegalStateException e) {
             mostrarAlerta("No se pudo confirmar la venta", e.getMessage());
             return;
         }
 
+        boolean guardadoEnBD = dao.registrarVentaTransaccional(ventaActual, medioSeleccionado);
+        String rutaTicketTxt = "";
+        try {
+            File archivoTicket = GestorArchivos.exportarTicketVenta(ventaActual);
+            rutaTicketTxt = "\nArchivo ticket: " + archivoTicket.getName();
+        } catch (IOException e) {
+            System.err.println("Error al exportar archivo de ticket: " + e.getMessage());
+        }
+
         Alert alerta = new Alert(Alert.AlertType.INFORMATION);
         alerta.setTitle("JRMARKET - Venta Registrada");
         alerta.setHeaderText("Ticket: " + ventaActual.getNroTicket());
-        alerta.setContentText("Total cobrado: $ " + FormatoImporte.formatear(ventaActual.getTotal()) +
-                              "\nMedio: " + ventaActual.getMedioPago() +
-                              "\nEstado: " + ventaActual.getEstadoActual().getNombre());
+        alerta.setContentText("Total cobrado: $ " + FormatoImporte.formatear(ventaActual.getTotal())
+                              + "\nMedio: " + medioSeleccionado.getDescripcion()
+                              + "\nEstado: " + ventaActual.getEstadoActual().getNombre()
+                              + (guardadoEnBD ? "\nPersistencia MySQL: OK" : "")
+                              + rutaTicketTxt);
         alerta.showAndWait();
 
         cancelarVentaCompleta();
@@ -405,7 +449,6 @@ public class VentasController implements Initializable {
         alert.showAndWait();
     }
 
-    /** Evita que un handler registre operaciones luego del cierre del turno. */
     private boolean validarTurnoAbierto() {
         if (refrescarEstadoCaja()) return true;
         mostrarAlerta("Caja cerrada", "Abra un turno de caja antes de registrar ventas.");

@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -16,6 +17,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.ResourceBundle;
+
+import com.jrmarket.dao.JRMarketDAO;
 import com.jrmarket.model.Rol;
 import com.jrmarket.model.Usuario;
 
@@ -31,6 +34,7 @@ public class UsuarioController implements Initializable {
 
     private ObservableList<Usuario> listaUsuariosObservable;
     private List<Rol> rolesDisponibles;
+    private final JRMarketDAO dao = new JRMarketDAO();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -90,6 +94,7 @@ public class UsuarioController implements Initializable {
                 String hashStr = HexFormat.of().formatHex(hash);
                 int nuevoId = listaUsuariosObservable.stream().mapToInt(Usuario::getIdUsuario).max().orElse(0) + 1;
                 Usuario nuevo = new Usuario(nuevoId, u, hashStr, n, true, cbRol.getValue());
+                dao.insertarUsuario(nuevo, hashStr);
                 listaUsuariosObservable.add(nuevo);
                 tblUsuarios.refresh();
             } catch (NoSuchAlgorithmException e) {
@@ -109,6 +114,7 @@ public class UsuarioController implements Initializable {
         dialog.setContentText("Seleccione nuevo rol:");
         dialog.showAndWait().ifPresent(nuevoRol -> {
             sel.setRol(nuevoRol);
+            dao.actualizarUsuario(sel);
             tblUsuarios.refresh();
         });
     }
@@ -118,6 +124,7 @@ public class UsuarioController implements Initializable {
         Usuario sel = tblUsuarios.getSelectionModel().getSelectedItem();
         if (sel != null) {
             sel.cambiarEstado(!sel.isEstado());
+            dao.actualizarUsuario(sel);
             tblUsuarios.refresh();
         }
     }

@@ -18,18 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import com.jrmarket.dao.JRMarketDAO;
 import com.jrmarket.model.*;
 
 /**
  * Controlador principal de la interfaz del menú del sistema JRMarket.
- *
- * <p>Su responsabilidad es coordinar la navegación entre los módulos funcionales,
- * mantener el estado de sesión compartido durante la ejecución de la aplicación y
- * aplicar restricciones de acceso según el rol del usuario autenticado.</p>
- *
- * <p>Los datos cargados en memoria se reutilizan entre pantallas para reflejar un
- * mismo contexto transaccional sin necesidad de persistir la información en cada
- * ventana abierta.</p>
  */
 public class MenuPrincipalController implements Initializable {
 
@@ -44,38 +37,35 @@ public class MenuPrincipalController implements Initializable {
     @FXML private Button btnModuloCompras;
     @FXML private Button btnModuloUsuarios;
 
-    /**
-     * Estado de sesión activo para la ejecución actual de la aplicación.
-     *
-     * <p>Estas colecciones representan el contexto compartido entre módulos y se
-     * reinician al cerrar la sesión del usuario.</p>
-     */
     private Usuario usuarioActual;
     private List<TurnoCaja> turnosCaja = new ArrayList<>();
     private List<Producto> catalogoProductos = new ArrayList<>();
     private List<Proveedor> proveedores = new ArrayList<>();
     private List<Usuario> usuarios = new ArrayList<>();
     private List<Rol> roles = new ArrayList<>();
+    private final JRMarketDAO dao = new JRMarketDAO();
 
-    /**
-     * Inicializa los datos operativos propios del menú.
-     *
-     * @param location Ubicación del recurso FXML asociado al controlador.
-     * @param resources Recursos de internacionalización y configuración del entorno JavaFX.
-     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        inicializarDatosSemilla();
+        cargarDatosDesdeBaseDeDatos();
     }
 
-    /**
-     * Carga el catálogo y los proveedores iniciales para simular un entorno operativo mínimo.
-     *
-     * <p>Los usuarios, roles y permisos se inicializan en el login y se comparten con
-     * este controlador para que las pantallas trabajen con las mismas instancias.</p>
-     */
+    private void cargarDatosDesdeBaseDeDatos() {
+        catalogoProductos.clear();
+        proveedores.clear();
+
+        List<Producto> productosBD = dao.consultarProductosDisponibles();
+        List<Proveedor> proveedoresBD = dao.consultarProveedoresDisponibles();
+
+        if (!productosBD.isEmpty() && !proveedoresBD.isEmpty()) {
+            catalogoProductos.addAll(productosBD);
+            proveedores.addAll(proveedoresBD);
+        } else {
+            inicializarDatosSemilla();
+        }
+    }
+
     private void inicializarDatosSemilla() {
-        // 1. Definición de marcas y categorías del catálogo de productos.
         Marca mMilka = new Marca(1, "Milka", "2026-01-01", null);
         Marca mCepita = new Marca(2, "Cepita", "2026-01-01", null);
         Marca mCoca = new Marca(3, "Coca-Cola", "2026-01-01", null);
@@ -97,16 +87,8 @@ public class MenuPrincipalController implements Initializable {
         proveedores.add(new Proveedor(1, "Mayorista BLOW MAX", "30-67891234-9", "Mendoza", "261-4455667", true));
         proveedores.add(new Proveedor(2, "TADICOR Mayorista", "30-71175642-1", "Las Heras", "261-4455889", true));
         proveedores.add(new Proveedor(3, "OSCAR DAVID Mayorista", "30-58912345-6", "Godoy Cruz", "261-4455990", true));
-
     }
 
-    /**
-     * Asigna el usuario autenticado a la sesión actual y actualiza el estado visual del menú.
-     *
-     * @param usuario Instancia del operador activo en la sesión actual.
-     * @param usuarios Usuarios compartidos con los módulos de administración.
-     * @param roles Roles y permisos compartidos con los módulos de administración.
-     */
     public void setUsuarioLogueado(Usuario usuario, List<Usuario> usuarios, List<Rol> roles) {
         this.usuarios = usuarios;
         this.roles = roles;
@@ -122,7 +104,7 @@ public class MenuPrincipalController implements Initializable {
         }
 
         this.usuarioActual = usuario;
-        this.turnosCaja = new ArrayList<>();
+        this.turnosCaja = new ArrayList<>(dao.consultarTurnosCaja(this.usuarios));
 
         lblUsuario.setText(usuario.getNombreCompleto());
         lblRol.setText(usuario.getRol().getNombre());
@@ -131,12 +113,6 @@ public class MenuPrincipalController implements Initializable {
         aplicarPermisosSegunRol();
     }
 
-    /**
-     * Habilita únicamente los módulos autorizados según el rol del usuario actual.
-     *
-     * <p>La visualización de los botones se reduce a un estado visible con opacidad
-     * menor cuando no cuentan con permisos válidos.</p>
-     */
     private void aplicarPermisosSegunRol() {
         if (usuarioActual == null) {
             btnModuloVentas.setDisable(true);
@@ -168,12 +144,6 @@ public class MenuPrincipalController implements Initializable {
     }
 
     @FXML
-    /**
-     * Abre el módulo de ventas y comparte el contexto operativo del usuario actual.
-     *
-     * <p>Se inyectan los turnos, productos y datos de sesión para que la vista de ventas
-     * trabaje con la misma información que el menú principal.</p>
-     */
     private void abrirVentas() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/jrmarket/view/VentasView.fxml"));
@@ -193,12 +163,6 @@ public class MenuPrincipalController implements Initializable {
     }
 
     @FXML
-    /**
-     * Abre la pantalla de cierre de caja solo cuando existe un turno activo.
-     *
-     * <p>Si no hay una caja abierta, se informa al operador para evitar errores de flujo
-     * de negocio en el proceso de arqueo.</p>
-     */
     private void abrirCierreCaja() {
         TurnoCaja turnoActivo = buscarTurnoAbierto();
         if (turnoActivo == null) {
@@ -225,11 +189,6 @@ public class MenuPrincipalController implements Initializable {
         }
     }
 
-    /**
-     * Busca el turno vigente más reciente dentro del contexto de sesión actual.
-     *
-     * @return El turno activo en curso, o null si no existe un turno abierto.
-     */
     private TurnoCaja buscarTurnoAbierto() {
         for (int indice = turnosCaja.size() - 1; indice >= 0; indice--) {
             TurnoCaja turno = turnosCaja.get(indice);
@@ -239,9 +198,6 @@ public class MenuPrincipalController implements Initializable {
     }
 
     @FXML
-    /**
-     * Abre la vista del catálogo de Productos general reutilizando el mismo conjunto de productos.
-     */
     private void abrirCatalogo() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/jrmarket/view/ProductoView.fxml"));
@@ -261,9 +217,6 @@ public class MenuPrincipalController implements Initializable {
     }
 
     @FXML
-    /**
-     * Abre el módulo de compras con el catálogo y los proveedores que pertenecen a la sesión actual.
-     */
     private void abrirCompras() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/jrmarket/view/ComprasView.fxml"));
@@ -282,9 +235,6 @@ public class MenuPrincipalController implements Initializable {
     }
 
     @FXML
-    /**
-     * Abre la administración de usuarios validando los permisos necesarios del operador.
-     */
     private void abrirUsuarios() {
         if (usuarioActual == null) {
             Alert alerta = new Alert(Alert.AlertType.WARNING, "No hay una sesión activa para gestionar usuarios.");
@@ -320,12 +270,6 @@ public class MenuPrincipalController implements Initializable {
         }
     }
 
-    /**
-     * Presenta un cuadro de error con detalle técnico para facilitar la depuración.
-     *
-     * @param titulo Mensaje breve del problema detectado para el usuario final.
-     * @param e Excepción original que produjo el error.
-     */
     private void mostrarError(String titulo, Exception e) {
         e.printStackTrace();
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -345,12 +289,6 @@ public class MenuPrincipalController implements Initializable {
     }
 
     @FXML
-    /**
-     * Cierra la sesión del usuario y regresa a la pantalla de autenticación.
-     *
-     * <p>Se abre la vista de Login y se finaliza la ventana principal actual para
-     * evitar que la sesión siga activa en memoria.</p>
-     */
     private void cerrarSesion() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/jrmarket/view/LoginView.fxml"));

@@ -1,4 +1,5 @@
 com\jrmarket\model\TipoProducto.class
+com\jrmarket\dao\ConexionBD.class
 com\jrmarket\model\TurnoCaja.class
 com\jrmarket\controller\VentasController$2.class
 com\jrmarket\controller\VentasController.class
@@ -10,6 +11,7 @@ com\jrmarket\util\FormatoImporte.class
 com\jrmarket\controller\ComprasController$1.class
 com\jrmarket\model\MedioPago.class
 com\jrmarket\model\Venta.class
+com\jrmarket\util\GestorArchivos.class
 com\jrmarket\model\RolPermiso.class
 com\jrmarket\controller\MenuPrincipalController.class
 com\jrmarket\model\Compra.class
@@ -25,7 +27,9 @@ com\jrmarket\App.class
 com\jrmarket\controller\ProductoController$1.class
 com\jrmarket\controller\LoginController.class
 com\jrmarket\controller\ComprasController.class
+com\jrmarket\controller\UsuarioController.class
 com\jrmarket\controller\ComprasController$2.class
 com\jrmarket\model\HistorialEstadoVenta.class
 com\jrmarket\model\Marca.class
 com\jrmarket\model\DetalleVenta.class
+com\jrmarket\dao\JRMarketDAO.class
