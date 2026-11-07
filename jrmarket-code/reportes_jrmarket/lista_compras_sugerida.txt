@@ -1,0 +1,12 @@
+==========================================================
+       JRMARKET - LISTA SUGERIDA DE COMPRAS (STOCK)       
+==========================================================
+Fecha de emisión: 21/10/2026 17:08
+Artículos en estado crítico: 2
+----------------------------------------------------------
+Código: 779015 | Gaseosa 500ml Original (Coca-Cola)
+   Stock Actual: 4 | Stock Mínimo: 12 | Compra Sugerida: 20 u.
+----------------------------------------------------------
+Código: 779035 | Chicles Menta Fuerte 10u (Beldent)
+   Stock Actual: 8 | Stock Mínimo: 20 | Compra Sugerida: 32 u.
+----------------------------------------------------------

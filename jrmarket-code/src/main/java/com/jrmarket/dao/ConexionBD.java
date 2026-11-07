@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 
 /**
- * Gestiona la conexión con la base de datos MySQL mediante la biblioteca estándar JDBC.
+ * Gestiona la conexión hacia la base de datos MySQL (jrmarket) en XAMPP mediante JDBC.
  */
 public class ConexionBD {
 
@@ -17,18 +17,24 @@ public class ConexionBD {
 
     private ConexionBD() {}
 
+    /**
+     * Carga el driver JDBC de MySQL y establece la conexión con el servidor local en el puerto 3306.
+     */
     public static Connection obtenerConexion() throws SQLException {
         try {
             Class.forName(DRIVER);
         } catch (ClassNotFoundException e) {
-            throw new SQLException("No se encontró el driver JDBC de MySQL: " + e.getMessage(), e);
+            throw new SQLException("No se encontró el driver JDBC de MySQL (" + DRIVER + "). "
+                    + "Verifique haber guardado el pom.xml y actualizado Maven.", e);
         }
         Connection conexion = DriverManager.getConnection(URL, USUARIO, CLAVE);
         verificarAdvertencias(conexion);
-        System.out.println("[JDBC OK] Conectado a MySQL en 127.0.0.1:3306/jrmarket");
         return conexion;
     }
 
+    /**
+     * Comprueba si la conexión se encuentra abierta y disponible mediante isClosed() e isValid().
+     */
     public static boolean esConexionValida(Connection conexion) {
         try {
             return conexion != null && !conexion.isClosed() && conexion.isValid(2);
@@ -37,6 +43,9 @@ public class ConexionBD {
         }
     }
 
+    /**
+     * Inspecciona y limpia eventuales objetos SQLWarning encadenados en la conexión.
+     */
     private static void verificarAdvertencias(Connection conexion) {
         try {
             SQLWarning warning = conexion.getWarnings();
@@ -49,6 +58,9 @@ public class ConexionBD {
         }
     }
 
+    /**
+     * Cierra de forma segura la conexión activa hacia MySQL.
+     */
     public static void cerrarConexion(Connection conexion) {
         if (conexion != null) {
             try {

@@ -19,15 +19,19 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import com.jrmarket.dao.JRMarketDAO;
 import com.jrmarket.model.*;
 import com.jrmarket.util.FormatoImporte;
+import com.jrmarket.util.GestorArchivos;
 
 /** Controla las listas sugeridas y el registro de compras a mayoristas. */
 public class ComprasController implements Initializable {
@@ -35,7 +39,6 @@ public class ComprasController implements Initializable {
     @FXML private Label lblOperador;
     @FXML private TabPane tabPaneCompras;
 
-    // Pestaña Faltantes
     @FXML private Label lblResumenFaltantes;
     @FXML private TableView<Producto> tblFaltantes;
     @FXML private TableColumn<Producto, String> colFaltanteCodigo;
@@ -46,7 +49,6 @@ public class ComprasController implements Initializable {
     @FXML private TableColumn<Producto, Integer> colFaltanteStockMinimo;
     @FXML private TableColumn<Producto, Integer> colFaltanteSugerido;
 
-    // Pestaña Compras
     @FXML private ComboBox<Proveedor> cbProveedor;
     @FXML private TextField txtNroComprobante;
     @FXML private TextField txtCodigoBarras;
@@ -67,11 +69,10 @@ public class ComprasController implements Initializable {
     private Compra compraActual;
     private ObservableList<DetalleCompra> itemsCompraObservable = FXCollections.observableArrayList();
     private ObservableList<Producto> listaFaltantesObservable = FXCollections.observableArrayList();
+    private final JRMarketDAO dao = new JRMarketDAO();
 
-    /** Configura ambas tablas y permite corregir costos antes de confirmar la compra. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Enlace a atributos de modelos
         colFaltanteCodigo.setCellValueFactory(new PropertyValueFactory<>("codigoBarras"));
         colFaltanteMarca.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMarca().getNombre()));
         colFaltanteDescripcion.setCellValueFactory(new PropertyValueFactory<>("descripcion"));
@@ -133,7 +134,6 @@ public class ComprasController implements Initializable {
         tblDetalleCompra.setItems(itemsCompraObservable);
     }
 
-    /** Recibe del menú los datos en memoria usados durante la sesión. */
     public void inicializarContexto(Usuario usuario, List<Producto> catalogo, List<Proveedor> proveedores) {
         this.operador = usuario;
         this.catalogoCompartido = catalogo;
@@ -146,7 +146,6 @@ public class ComprasController implements Initializable {
         iniciarNuevaCompra();
     }
 
-    /** Prepara una cabecera y un detalle vacíos para el siguiente comprobante. */
     private void iniciarNuevaCompra() {
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         this.compraActual = new Compra(1, "", fecha, operador, cbProveedor.getValue());
@@ -155,13 +154,14 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
-    /** Filtra el catálogo según el mínimo configurado para cada producto. */
     private void generarListaSugeridos() {
         listaFaltantesObservable.clear();
         if (catalogoCompartido == null) return;
 
-        for (Producto p : catalogoCompartido) {
-            if (p.esStockCritico()) { // Método de Producto
+        Iterator<Producto> it = catalogoCompartido.iterator();
+        while (it.hasNext()) {
+            Producto p = it.next();
+            if (p.esStockCritico()) {
                 listaFaltantesObservable.add(p);
             }
         }
@@ -169,12 +169,10 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
-    /** Abre el selector de productos con el texto de búsqueda ingresado. */
     private void agregarPorCodigo() {
         abrirExploradorProductos(txtCodigoBarras.getText().trim());
     }
 
-    /** Refleja el total calculado y habilita confirmar cuando hay renglones. */
     private void actualizarTotalUI() {
         double total = compraActual.calcularTotal();
         lblTotalCompra.setText("$ " + FormatoImporte.formatear(total));
@@ -182,7 +180,6 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
-    /** Valida el comprobante y aplica stock y costo solo al confirmar la compra. */
     private void confirmarIngresoMercaderia() {
         String nro = txtNroComprobante.getText().trim();
         if (nro.isEmpty()) {
@@ -206,10 +203,14 @@ public class ComprasController implements Initializable {
             return;
         }
 
+        boolean guardadoBD = dao.registrarCompraTransaccional(compraActual);
+
         Alert alerta = new Alert(Alert.AlertType.INFORMATION);
         alerta.setTitle("JRMARKET - Stock Actualizado");
         alerta.setHeaderText("Factura registrada: " + compraActual.getNroComprobante());
-        alerta.setContentText("Total abonado: $ " + FormatoImporte.formatear(compraActual.getTotal()) + "\nMercadería ingresada al inventario.");
+        alerta.setContentText("Total abonado: $ " + FormatoImporte.formatear(compraActual.getTotal())
+                + "\nMercadería ingresada al inventario."
+                + (guardadoBD ? "\nPersistencia MySQL: OK" : ""));
         alerta.showAndWait();
 
         iniciarNuevaCompra();
@@ -217,7 +218,6 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
-    /** Quita el renglón seleccionado y vuelve a calcular el total. */
     private void quitarItemSeleccionado() {
         DetalleCompra sel = tblDetalleCompra.getSelectionModel().getSelectedItem();
         if (sel != null) {
@@ -238,24 +238,29 @@ public class ComprasController implements Initializable {
     }
 
     @FXML
-    /** Genera una salida impresa con las cantidades sugeridas de reposición. */
     private void imprimirListaFaltantes() {
         if (listaFaltantesObservable.isEmpty()) {
             Alert alerta = new Alert(Alert.AlertType.INFORMATION);
             alerta.setTitle("Lista de compras vacía");
             alerta.setHeaderText(null);
-            alerta.setContentText("Cargue los productos sugeridos antes de imprimir la lista.");
+            alerta.setContentText("Cargue los productos sugeridos antes de imprimir o exportar la lista.");
             alerta.showAndWait();
             return;
         }
 
+        try {
+            File archivoExportado = GestorArchivos.exportarListaFaltantes(listaFaltantesObservable);
+            Alert confirmacionArchivo = new Alert(Alert.AlertType.INFORMATION);
+            confirmacionArchivo.setTitle("Archivo de texto generado");
+            confirmacionArchivo.setHeaderText("Lista exportada correctamente");
+            confirmacionArchivo.setContentText("Se generó el archivo:\n" + archivoExportado.getAbsolutePath());
+            confirmacionArchivo.showAndWait();
+        } catch (IOException e) {
+            mostrarAlerta("Error de archivo", "No se pudo guardar el archivo de texto: " + e.getMessage());
+        }
+
         PrinterJob trabajo = PrinterJob.createPrinterJob();
         if (trabajo == null) {
-            Alert alerta = new Alert(Alert.AlertType.ERROR);
-            alerta.setTitle("Impresión no disponible");
-            alerta.setHeaderText(null);
-            alerta.setContentText("No se encontró una impresora disponible en el sistema.");
-            alerta.showAndWait();
             return;
         }
 
@@ -289,19 +294,14 @@ public class ComprasController implements Initializable {
             trabajo.endJob();
         } else {
             trabajo.cancelJob();
-            Alert alerta = new Alert(Alert.AlertType.ERROR);
-            alerta.setTitle("Error de impresión");
-            alerta.setHeaderText(null);
-            alerta.setContentText("No se pudo enviar la lista a la impresora.");
-            alerta.showAndWait();
         }
     }
+
     @FXML
     private void abrirExploradorProductos() {
         abrirExploradorProductos("");
     }
 
-    /** Muestra el selector modal en modo compra y devuelve costo y cantidad elegidos. */
     private void abrirExploradorProductos(String filtro) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/jrmarket/view/ProductoView.fxml"));
@@ -328,7 +328,6 @@ public class ComprasController implements Initializable {
         }
     }
 
-    /** Agrega al comprobante los datos confirmados en el selector de productos. */
     private void agregarProductoSeleccionado(Producto producto, int cantidad, double costo) {
         try {
             compraActual.agregarDetalle(producto, cantidad, costo);

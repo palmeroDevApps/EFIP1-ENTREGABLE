@@ -18,8 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Utilidad encargada de la manipulación de archivos de texto (.txt) mediante el paquete java.io.
- * Permite exportar comprobantes de venta, listas de reposición y reportes de arqueo de caja.
+ * Gestiona la entrada/salida de archivos de texto (.txt) mediante las clases del paquete java.io.
  */
 public final class GestorArchivos {
 
@@ -28,7 +27,7 @@ public final class GestorArchivos {
     private GestorArchivos() {}
 
     /**
-     * Emite un comprobante de venta en formato de texto utilizando File, FileOutputStream y PrintStream.
+     * Emite un ticket de venta en formato de texto utilizando File, FileOutputStream y PrintStream.
      */
     public static File exportarTicketVenta(Venta venta) throws IOException {
         File directorio = asegurarDirectorio();
@@ -76,7 +75,7 @@ public final class GestorArchivos {
     }
 
     /**
-     * Exporta la lista sugerida de compras para reposición usando File, FileWriter y BufferedWriter.
+     * Exporta la lista sugerida de compras empleando File, FileWriter y BufferedWriter.
      */
     public static File exportarListaFaltantes(List<Producto> faltantes) throws IOException {
         File directorio = asegurarDirectorio();
@@ -118,7 +117,7 @@ public final class GestorArchivos {
     }
 
     /**
-     * Exporta el informe de arqueo y cierre de turno en un archivo de texto plano.
+     * Exporta el reporte de cierre y arqueo de turno en un archivo .txt.
      */
     public static File exportarArqueoTurno(TurnoCaja turno) throws IOException {
         File directorio = asegurarDirectorio();

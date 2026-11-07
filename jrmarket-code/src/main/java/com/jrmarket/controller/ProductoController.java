@@ -15,14 +15,16 @@ import javafx.stage.Stage;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ResourceBundle;
 
+import com.jrmarket.dao.JRMarketDAO;
 import com.jrmarket.model.Marca;
 import com.jrmarket.model.Producto;
 import com.jrmarket.model.TipoProducto;
-import com.jrmarket.util.FormatoImporte;
 import com.jrmarket.model.Usuario;
+import com.jrmarket.util.FormatoImporte;
 
 /** Presenta el catálogo en modo consulta/ABM o como selector para venta y compra. */
 public class ProductoController implements Initializable {
@@ -61,13 +63,12 @@ public class ProductoController implements Initializable {
     private boolean itemConfirmado = false;
     private boolean modoSeleccionCompra;
     private Usuario usuarioActual;
+    private final JRMarketDAO dao = new JRMarketDAO();
 
-    /** Configura filtros, columnas y controles compartidos entre los modos del catálogo. */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         spnCantidadModal.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 1));
-        cbFiltroRubro.setItems(FXCollections.observableArrayList("Todos", "Golosinas", "Bebidas", "Snacks"));
-        cbFiltroRubro.getSelectionModel().selectFirst();
+        cargarRubrosDesdeModelo();
 
         colCodigo.setCellValueFactory(new PropertyValueFactory<>("codigoBarras"));
         colMarca.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getMarca().getNombre()));
@@ -86,7 +87,8 @@ public class ProductoController implements Initializable {
 
         tblProductos.getSelectionModel().selectedItemProperty().addListener((obs, ant, selec) -> {
             boolean hay = (selec != null);
-            boolean puedeGestionarProductos = usuarioActual != null && usuarioActual.tienePermiso(com.jrmarket.model.Permiso.GESTION_PRODUCTOS);
+            boolean puedeGestionarProductos = usuarioActual != null
+                    && usuarioActual.tienePermiso(com.jrmarket.model.Permiso.GESTION_PRODUCTOS);
 
             btnAgregarVenta.setDisable(!hay);
             btnModificar.setDisable(!hay || !puedeGestionarProductos);
@@ -99,7 +101,20 @@ public class ProductoController implements Initializable {
         setModoSeleccionVenta(false);
     }
 
-    /** Comparte la lista original para que los cambios se reflejen en los demás módulos. */
+    /**
+     * Construye el arreglo de opciones de filtro a partir de los objetos TipoProducto almacenados en MySQL.
+     */
+    private void cargarRubrosDesdeModelo() {
+        List<TipoProducto> tiposBD = dao.consultarTiposProductoDisponibles();
+        String[] rubrosDisponibles = new String[tiposBD.size() + 1];
+        rubrosDisponibles[0] = "Todos";
+        for (int i = 0; i < tiposBD.size(); i++) {
+            rubrosDisponibles[i + 1] = tiposBD.get(i).getNombre();
+        }
+        cbFiltroRubro.setItems(FXCollections.observableArrayList(rubrosDisponibles));
+        cbFiltroRubro.getSelectionModel().selectFirst();
+    }
+
     public void setCatalogo(List<Producto> catalogo) {
         this.listaProductos = FXCollections.observableList(catalogo);
         this.listaFiltrada = new FilteredList<>(listaProductos, p -> true);
@@ -108,7 +123,6 @@ public class ProductoController implements Initializable {
         actualizarContador();
     }
 
-    /** Precarga el filtro recibido desde Ventas o Compras. */
     public void setBusquedaInicial(String busqueda) {
         txtBusqueda.setText(busqueda == null ? "" : busqueda);
         filtrarProductos();
@@ -125,13 +139,10 @@ public class ProductoController implements Initializable {
         configurarModoSeleccion(modoCompraActivo, "Compras");
     }
 
-    /**
-     * Recibe el operador y habilita las acciones de administración solo si posee
-     * el permiso específico de gestión del catálogo.
-     */
     public void setUsuarioActual(Usuario usuario) {
         this.usuarioActual = usuario;
-        boolean puedeGestionarProductos = usuario != null && usuario.tienePermiso(com.jrmarket.model.Permiso.GESTION_PRODUCTOS);
+        boolean puedeGestionarProductos = usuario != null
+                && usuario.tienePermiso(com.jrmarket.model.Permiso.GESTION_PRODUCTOS);
 
         boxAccionesABML.setVisible(puedeGestionarProductos);
         boxAccionesABML.setManaged(puedeGestionarProductos);
@@ -141,7 +152,6 @@ public class ProductoController implements Initializable {
         }
     }
 
-    /** Muestra las acciones apropiadas para ABM o selección de un artículo. */
     private void configurarModoSeleccion(boolean modoSeleccionActivo, String origen) {
         boxSeleccionVenta.setVisible(modoSeleccionActivo);
         boxSeleccionVenta.setManaged(modoSeleccionActivo);
@@ -156,7 +166,6 @@ public class ProductoController implements Initializable {
     }
 
     @FXML
-    /** Combina el texto rápido con el rubro elegido y omite productos inactivos. */
     private void filtrarProductos() {
         if (listaFiltrada == null) return;
         String texto = txtBusqueda.getText().trim().toLowerCase();
@@ -180,18 +189,19 @@ public class ProductoController implements Initializable {
     }
 
     private boolean esAdministrador() {
-        return usuarioActual != null && usuarioActual.getRol() != null 
+        return usuarioActual != null && usuarioActual.getRol() != null
                 && "ADMINISTRADOR".equalsIgnoreCase(usuarioActual.getRol().getNombre());
     }
-    
+
     @FXML
     private void nuevoProducto() {
-        Producto nuevo = mostrarFormularioProducto(null);
         if (!esAdministrador()) {
             mostrarAlerta("Acceso Denegado", "Solo el Administrador puede registrar nuevos productos.");
             return;
         }
+        Producto nuevo = mostrarFormularioProducto(null);
         if (nuevo != null) {
+            dao.insertarProducto(nuevo);
             listaProductos.add(nuevo);
             filtrarProductos();
         }
@@ -205,13 +215,13 @@ public class ProductoController implements Initializable {
         }
         Producto seleccionado = tblProductos.getSelectionModel().getSelectedItem();
         if (seleccionado != null && mostrarFormularioProducto(seleccionado) != null) {
+            dao.modificarProducto(seleccionado);
             filtrarProductos();
             tblProductos.refresh();
         }
     }
 
     @FXML
-    /** Realiza una baja lógica para conservar el producto en el historial del catálogo. */
     private void darDeBajaProducto() {
         if (!esAdministrador()) {
             mostrarAlerta("Acceso Denegado", "Solo el Administrador puede dar de baja productos.");
@@ -225,12 +235,12 @@ public class ProductoController implements Initializable {
             if (confirmacion.showAndWait().orElse(ButtonType.CANCEL).equals(ButtonType.OK)) {
                 sel.setEstado(false);
                 sel.setFechaHasta(LocalDate.now().toString());
+                dao.darDeBajaProducto(sel.getIdProducto());
                 filtrarProductos();
             }
         }
     }
 
-    /** Construye y valida el formulario usado tanto para alta como para modificación. */
     private Producto mostrarFormularioProducto(Producto original) {
         Dialog<ButtonType> dialogo = new Dialog<>();
         dialogo.setTitle(original == null ? "Nuevo producto" : "Modificar producto");
@@ -244,17 +254,22 @@ public class ProductoController implements Initializable {
         TextField stock = new TextField(original == null ? "0" : Integer.toString(original.getStockActual()));
         TextField stockMinimo = new TextField(original == null ? "0" : Integer.toString(original.getStockMinimo()));
 
-        List<Marca> marcas = new ArrayList<>();
-        List<TipoProducto> tipos = new ArrayList<>();
-        for (Producto producto : listaProductos) {
-            if (producto.getMarca() != null && !marcas.contains(producto.getMarca())) marcas.add(producto.getMarca());
-            if (producto.getTipoProducto() != null && !tipos.contains(producto.getTipoProducto())) tipos.add(producto.getTipoProducto());
+        List<Marca> marcas = dao.consultarMarcasDisponibles();
+        List<TipoProducto> tipos = dao.consultarTiposProductoDisponibles();
+        if (marcas.isEmpty() || tipos.isEmpty()) {
+            marcas = new ArrayList<>();
+            tipos = new ArrayList<>();
+            for (Producto producto : listaProductos) {
+                if (producto.getMarca() != null && !marcas.contains(producto.getMarca())) marcas.add(producto.getMarca());
+                if (producto.getTipoProducto() != null && !tipos.contains(producto.getTipoProducto())) tipos.add(producto.getTipoProducto());
+            }
         }
+
         ComboBox<Marca> marca = new ComboBox<>(FXCollections.observableArrayList(marcas));
         ComboBox<TipoProducto> tipo = new ComboBox<>(FXCollections.observableArrayList(tipos));
         if (original != null) {
-            marca.getSelectionModel().select(original.getMarca());
-            tipo.getSelectionModel().select(original.getTipoProducto());
+            seleccionarMarcaPorId(marca, original.getMarca());
+            seleccionarTipoPorId(tipo, original.getTipoProducto());
         } else {
             marca.getSelectionModel().selectFirst();
             tipo.getSelectionModel().selectFirst();
@@ -317,7 +332,31 @@ public class ProductoController implements Initializable {
         }
     }
 
-    
+    private void seleccionarMarcaPorId(ComboBox<Marca> combo, Marca buscada) {
+        if (buscada == null) return;
+        Iterator<Marca> it = combo.getItems().iterator();
+        while (it.hasNext()) {
+            Marca m = it.next();
+            if (m.getIdMarca() == buscada.getIdMarca()) {
+                combo.getSelectionModel().select(m);
+                return;
+            }
+        }
+        combo.getSelectionModel().selectFirst();
+    }
+
+    private void seleccionarTipoPorId(ComboBox<TipoProducto> combo, TipoProducto buscado) {
+        if (buscado == null) return;
+        Iterator<TipoProducto> it = combo.getItems().iterator();
+        while (it.hasNext()) {
+            TipoProducto t = it.next();
+            if (t.getIdTipoProducto() == buscado.getIdTipoProducto()) {
+                combo.getSelectionModel().select(t);
+                return;
+            }
+        }
+        combo.getSelectionModel().selectFirst();
+    }
 
     private void mostrarAlerta(String titulo, String mensaje) {
         Alert alerta = new Alert(Alert.AlertType.WARNING);
@@ -327,7 +366,6 @@ public class ProductoController implements Initializable {
     }
 
     @FXML
-    /** Devuelve al módulo que abrió el selector el producto y sus datos de selección. */
     private void agregarYVolver() {
         Producto sel = tblProductos.getSelectionModel().getSelectedItem();
         if (sel != null) {
@@ -360,5 +398,4 @@ public class ProductoController implements Initializable {
     public int getCantidadSeleccionada() { return cantidadSeleccionada; }
     public double getCostoUnitarioSeleccionado() { return costoUnitarioSeleccionado; }
     public boolean isItemConfirmado() { return itemConfirmado; }
-
 }
