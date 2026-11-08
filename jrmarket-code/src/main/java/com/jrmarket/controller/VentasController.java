@@ -12,9 +12,9 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.VBox;
-import javafx.util.converter.IntegerStringConverter;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.converter.IntegerStringConverter;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,18 +32,28 @@ import com.jrmarket.model.*;
 import com.jrmarket.util.FormatoImporte;
 import com.jrmarket.util.GestorArchivos;
 
-/** Controla el mostrador, la apertura manual del turno y el cobro utilizando la entidad MedioPago. */
+/**
+ * Controlador para la interfaz de mostrador de ventas y cobros (VentasView).
+ * Administra el flujo transaccional de venta, verificación de stock y persistencia ACID.
+ */
 public class VentasController implements Initializable {
 
+    // =========================================================================
+    // 1. COMPONENTES FXML (VISTA)
+    // =========================================================================
+    
+    // Panel superior: Estado del Turno y Operador
     @FXML private Label lblOperador;
     @FXML private Label lblNroTurno;
     @FXML private Label lblEstadoCaja;
     @FXML private Button btnAbrirTurno;
     @FXML private VBox boxOperacionesVenta;
 
+    // Panel de Búsqueda y Entrada de Ítems
     @FXML private TextField txtCodigoBarras;
     @FXML private Button btnExplorar;
 
+    // Grilla del Carrito de Ventas
     @FXML private TableView<DetalleVenta> tblDetalleVenta;
     @FXML private TableColumn<DetalleVenta, String> colCodigo;
     @FXML private TableColumn<DetalleVenta, String> colMarca;
@@ -51,9 +61,10 @@ public class VentasController implements Initializable {
     @FXML private TableColumn<DetalleVenta, Integer> colCantidad;
     @FXML private TableColumn<DetalleVenta, Double> colPrecioUnitario;
     @FXML private TableColumn<DetalleVenta, Double> colSubtotal;
-
     @FXML private Button btnQuitarItem;
     @FXML private Button btnCancelarVenta;
+
+    // Panel de Liquidación, Cobro y Vuelto
     @FXML private Label lblTotalPagar;
     @FXML private ComboBox<MedioPago> cbMedioPago;
     @FXML private TextField txtNroComprobante;
@@ -61,29 +72,62 @@ public class VentasController implements Initializable {
     @FXML private Label lblVuelto;
     @FXML private Button btnConfirmarVenta;
 
+    // =========================================================================
+    // 2. ATRIBUTOS DEL MODELO Y ESTADO
+    // =========================================================================
     private Usuario operadorActual;
     private List<TurnoCaja> turnosCaja;
     private TurnoCaja turnoActivo;
     private List<Producto> catalogoCompartido;
 
     private Venta ventaActual;
-    private ObservableList<DetalleVenta> itemsVentaObservable = FXCollections.observableArrayList();
+    private final ObservableList<DetalleVenta> itemsVentaObservable = FXCollections.observableArrayList();
     private final JRMarketDAO dao = new JRMarketDAO();
 
+    // =========================================================================
+    // 3. INICIALIZACIÓN Y ENLACE MVC
+    // =========================================================================
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        configurarColumnasTabla();
+        configurarOyentesCobro();
         cargarMediosPago();
-        cbMedioPago.setOnAction(event -> calcularVuelto());
-        txtNroComprobante.textProperty().addListener((obs, anterior, actual) -> {
-            MedioPago medio = cbMedioPago.getValue();
-            if (medio != null && !medio.isAfectaCajaFisica()) {
-                calcularVuelto();
+    }
+
+    /**
+     * Recibe los datos de contexto desde el Menú Principal al abrir la vista.
+     */
+    public void inicializarContexto(Usuario usuario, List<TurnoCaja> turnos, List<Producto> catalogo) {
+        this.operadorActual = usuario;
+        this.turnosCaja = turnos;
+        this.catalogoCompartido = catalogo;
+
+        lblOperador.setText(usuario.getNombreCompleto());
+        refrescarEstadoCaja();
+        iniciarNuevaVenta();
+    }
+
+    public void observarEstadoTurno(Stage stage) {
+        stage.focusedProperty().addListener((obs, antes, tieneFoco) -> {
+            if (tieneFoco) {
+                boolean estabaAbierto = turnoActivo != null && "ABIERTO".equalsIgnoreCase(turnoActivo.getEstado());
+                boolean estaAbierto = refrescarEstadoCaja();
+                if (!estabaAbierto && estaAbierto && ventaActual == null) {
+                    iniciarNuevaVenta();
+                }
             }
         });
+    }
 
+    // =========================================================================
+    // 4. CONFIGURACIÓN VISUAL (HELPERS DE VISTA)
+    // =========================================================================
+    private void configurarColumnasTabla() {
         colCodigo.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProducto().getCodigoBarras()));
         colMarca.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProducto().getMarca().getNombre()));
         colDescripcion.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getProducto().getDescripcion()));
+
+        // Edición de cantidad directa sobre la grilla
         tblDetalleVenta.setEditable(true);
         colCantidad.setCellValueFactory(new PropertyValueFactory<>("cantidad"));
         colCantidad.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
@@ -97,16 +141,19 @@ public class VentasController implements Initializable {
                 tblDetalleVenta.refresh();
             }
         });
+
+        // Formato monetario para precio unitario y subtotal
         colPrecioUnitario.setCellValueFactory(new PropertyValueFactory<>("precioCobrado"));
-        colPrecioUnitario.setCellFactory(column -> new TableCell<>() {
+        colPrecioUnitario.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Double importe, boolean empty) {
                 super.updateItem(importe, empty);
                 setText(empty || importe == null ? null : FormatoImporte.formatear(importe));
             }
         });
+
         colSubtotal.setCellValueFactory(new PropertyValueFactory<>("subtotal"));
-        colSubtotal.setCellFactory(column -> new TableCell<>() {
+        colSubtotal.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Double importe, boolean empty) {
                 super.updateItem(importe, empty);
@@ -117,9 +164,16 @@ public class VentasController implements Initializable {
         tblDetalleVenta.setItems(itemsVentaObservable);
     }
 
-    /**
-     * Obtiene los objetos MedioPago desde la base de datos MySQL y filtra aquellos vigentes.
-     */
+    private void configurarOyentesCobro() {
+        cbMedioPago.setOnAction(event -> calcularVuelto());
+        txtNroComprobante.textProperty().addListener((obs, ant, act) -> {
+            MedioPago medio = cbMedioPago.getValue();
+            if (medio != null && !medio.isAfectaCajaFisica()) {
+                calcularVuelto();
+            }
+        });
+    }
+
     private void cargarMediosPago() {
         List<MedioPago> mediosBD = dao.consultarMediosPagoDisponibles();
         List<MedioPago> mediosVigentes = new ArrayList<>();
@@ -141,19 +195,12 @@ public class VentasController implements Initializable {
         cbMedioPago.getSelectionModel().selectFirst();
     }
 
-    public void inicializarContexto(Usuario usuario, List<TurnoCaja> turnos, List<Producto> catalogo) {
-        this.operadorActual = usuario;
-        this.turnosCaja = turnos;
-        this.catalogoCompartido = catalogo;
-
-        lblOperador.setText(usuario.getNombreCompleto());
-        refrescarEstadoCaja();
-        iniciarNuevaVenta();
-    }
-
+    // =========================================================================
+    // 5. GESTIÓN DEL TURNO DE CAJA
+    // =========================================================================
     private TurnoCaja buscarTurnoAbierto() {
-        for (int indice = turnosCaja.size() - 1; indice >= 0; indice--) {
-            TurnoCaja turno = turnosCaja.get(indice);
+        for (int i = turnosCaja.size() - 1; i >= 0; i--) {
+            TurnoCaja turno = turnosCaja.get(i);
             if ("ABIERTO".equalsIgnoreCase(turno.getEstado())) return turno;
         }
         return null;
@@ -205,6 +252,7 @@ public class VentasController implements Initializable {
             dao.insertarTurnoCaja(nuevoTurno);
             turnosCaja.add(nuevoTurno);
             turnoActivo = nuevoTurno;
+
             refrescarEstadoCaja();
             iniciarNuevaVenta();
         } catch (IllegalArgumentException | IllegalStateException e) {
@@ -212,6 +260,9 @@ public class VentasController implements Initializable {
         }
     }
 
+    // =========================================================================
+    // 6. FLUJO DEL CARRITO (CARGA Y VALIDACIÓN DE ÍTEMS)
+    // =========================================================================
     private void iniciarNuevaVenta() {
         if (turnoActivo == null || !"ABIERTO".equalsIgnoreCase(turnoActivo.getEstado())) {
             ventaActual = null;
@@ -219,27 +270,15 @@ public class VentasController implements Initializable {
             actualizarTotalesUI();
             return;
         }
+
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         String ticket = "TK-0001-" + String.format("%05d", (int)(Math.random() * 90000) + 10000);
         MedioPago medioInicial = cbMedioPago.getValue();
-        String descripcionMedio = medioInicial != null ? medioInicial.getDescripcion() : "";
+        String descMedio = medioInicial != null ? medioInicial.getDescripcion() : "";
 
-        this.ventaActual = new Venta(1, ticket, fecha, operadorActual, descripcionMedio, turnoActivo);
+        this.ventaActual = new Venta(1, ticket, fecha, operadorActual, descMedio, turnoActivo);
         itemsVentaObservable.clear();
         actualizarTotalesUI();
-    }
-
-    public void observarEstadoTurno(Stage stage) {
-        stage.focusedProperty().addListener((observacion, focoAnterior, tieneFoco) -> {
-            if (tieneFoco) {
-                boolean estabaAbierto = turnoActivo != null
-                    && "ABIERTO".equalsIgnoreCase(turnoActivo.getEstado());
-                boolean estaAbierto = refrescarEstadoCaja();
-                if (!estabaAbierto && estaAbierto && ventaActual == null) {
-                    iniciarNuevaVenta();
-                }
-            }
-        });
     }
 
     @FXML
@@ -299,6 +338,8 @@ public class VentasController implements Initializable {
 
     private void agregarProductoAVenta(Producto producto, int cantidad) {
         if (!validarTurnoAbierto()) return;
+        
+        // Validación de regla de negocio en el Modelo
         if (!producto.validarDisponibilidad(cantidad)) {
             mostrarAlerta("Stock insuficiente", "Existencias disponibles: " + producto.getStockActual());
             return;
@@ -307,7 +348,6 @@ public class VentasController implements Initializable {
         try {
             ventaActual.agregarItem(producto, cantidad);
             itemsVentaObservable.setAll(ventaActual.getDetalles());
-
             txtCodigoBarras.clear();
             actualizarTotalesUI();
         } catch (IllegalArgumentException e) {
@@ -315,6 +355,28 @@ public class VentasController implements Initializable {
         }
     }
 
+    @FXML
+    private void quitarItemSeleccionado() {
+        if (!validarTurnoAbierto()) return;
+        DetalleVenta seleccionado = tblDetalleVenta.getSelectionModel().getSelectedItem();
+        if (seleccionado != null) {
+            ventaActual.quitarItem(seleccionado);
+            itemsVentaObservable.setAll(ventaActual.getDetalles());
+            actualizarTotalesUI();
+        }
+    }
+
+    @FXML
+    private void cancelarVentaCompleta() {
+        if (!validarTurnoAbierto()) return;
+        iniciarNuevaVenta();
+        txtPagaCon.clear();
+        txtNroComprobante.clear();
+    }
+
+    // =========================================================================
+    // 7. LIQUIDACIÓN, COBRO Y CÁLCULO DE VUELTO
+    // =========================================================================
     private void actualizarTotalesUI() {
         if (ventaActual == null) {
             lblTotalPagar.setText("$ " + FormatoImporte.formatear(0.0));
@@ -322,29 +384,31 @@ public class VentasController implements Initializable {
             calcularVuelto();
             return;
         }
-        double total = ventaActual.calcularTotal();
+        double total = ventaActual.calcularTotal(); // Llamada polimórfica (Comprobante)
         lblTotalPagar.setText("$ " + FormatoImporte.formatear(total));
         btnConfirmarVenta.setDisable(ventaActual.getDetalles().isEmpty());
         calcularVuelto();
     }
 
     @FXML
-    /** Evalúa el objeto MedioPago seleccionado mediante su método isAfectaCajaFisica(). */
     private void calcularVuelto() {
         if (ventaActual == null) {
             btnConfirmarVenta.setDisable(true);
             return;
         }
+
         MedioPago medioSeleccionado = cbMedioPago.getValue();
+        // Caso transferencia / electrónico (no maneja efectivo físico)
         if (medioSeleccionado != null && !medioSeleccionado.isAfectaCajaFisica()) {
             lblVuelto.setText("$ 0,00");
             txtPagaCon.setDisable(true);
             txtNroComprobante.setDisable(false);
             btnConfirmarVenta.setDisable(ventaActual.getDetalles().isEmpty()
-                || txtNroComprobante.getText().trim().isEmpty());
+                    || txtNroComprobante.getText().trim().isEmpty());
             return;
         }
 
+        // Caso efectivo
         txtPagaCon.setDisable(false);
         txtNroComprobante.setDisable(true);
 
@@ -372,28 +436,13 @@ public class VentasController implements Initializable {
         }
     }
 
-    @FXML
-    private void quitarItemSeleccionado() {
-        if (!validarTurnoAbierto()) return;
-        DetalleVenta seleccionado = tblDetalleVenta.getSelectionModel().getSelectedItem();
-        if (seleccionado != null) {
-            ventaActual.quitarItem(seleccionado);
-            itemsVentaObservable.setAll(ventaActual.getDetalles());
-            actualizarTotalesUI();
-        }
-    }
-
-    @FXML
-    private void cancelarVentaCompleta() {
-        if (!validarTurnoAbierto()) return;
-        iniciarNuevaVenta();
-        txtPagaCon.clear();
-        txtNroComprobante.clear();
-    }
-
+    // =========================================================================
+    // 8. CONFIRMACIÓN, PERSISTENCIA ATÓMICA Y EMISIÓN DE TICKET
+    // =========================================================================
     @FXML
     private void confirmarVenta() {
         if (!validarTurnoAbierto()) return;
+
         MedioPago medioSeleccionado = cbMedioPago.getValue();
         if (medioSeleccionado == null || !medioSeleccionado.isVigente()) {
             mostrarAlerta("Medio de pago inválido", "Seleccione un medio de pago vigente.");
@@ -402,6 +451,7 @@ public class VentasController implements Initializable {
 
         ventaActual.setMedioPago(medioSeleccionado.getDescripcion());
         ventaActual.setComprobantePago(txtNroComprobante.getText().trim());
+
         if (medioSeleccionado.isAfectaCajaFisica()) {
             try {
                 ventaActual.liquidarVuelto(Double.parseDouble(txtPagaCon.getText().trim()));
@@ -420,7 +470,10 @@ public class VentasController implements Initializable {
             return;
         }
 
+        // 1. Persistencia atómica en Base de Datos MySQL (ACID)
         boolean guardadoEnBD = dao.registrarVentaTransaccional(ventaActual, medioSeleccionado);
+
+        // 2. Generación física de comprobante mediante java.io
         String rutaTicketTxt = "";
         try {
             File archivoTicket = GestorArchivos.exportarTicketVenta(ventaActual);
@@ -429,19 +482,23 @@ public class VentasController implements Initializable {
             System.err.println("Error al exportar archivo de ticket: " + e.getMessage());
         }
 
+        // 3. Notificación al usuario y reseteo
         Alert alerta = new Alert(Alert.AlertType.INFORMATION);
         alerta.setTitle("JRMARKET - Venta Registrada");
         alerta.setHeaderText("Ticket: " + ventaActual.getNroTicket());
         alerta.setContentText("Total cobrado: $ " + FormatoImporte.formatear(ventaActual.getTotal())
-                              + "\nMedio: " + medioSeleccionado.getDescripcion()
-                              + "\nEstado: " + ventaActual.getEstadoActual().getNombre()
-                              + (guardadoEnBD ? "\nPersistencia MySQL: OK" : "")
-                              + rutaTicketTxt);
+                + "\nMedio: " + medioSeleccionado.getDescripcion()
+                + "\nEstado: " + ventaActual.getEstadoActual().getNombre()
+                + (guardadoEnBD ? "\nPersistencia MySQL: OK" : "")
+                + rutaTicketTxt);
         alerta.showAndWait();
 
         cancelarVentaCompleta();
     }
 
+    // =========================================================================
+    // 9. MÉTODOS DE SOPORTE Y VALIDACIONES
+    // =========================================================================
     private void mostrarAlerta(String titulo, String msg) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(titulo);

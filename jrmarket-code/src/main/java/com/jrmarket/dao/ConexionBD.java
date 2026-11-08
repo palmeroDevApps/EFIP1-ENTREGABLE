@@ -68,7 +68,7 @@ public class ConexionBD {
                     conexion.close();
                 }
             } catch (SQLException e) {
-                System.err.println("Error al cerrar la conexión JDBC: " + e.getMessage());
+                System.err.println("Error al cerrar la conexion JDBC: " + e.getMessage());
             }
         }
     }
