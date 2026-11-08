@@ -136,7 +136,7 @@ public class JRMarketDAO {
                     + "ON DUPLICATE KEY UPDATE razonSocial = VALUES(razonSocial)");
 
             esquemaVerificado = true;
-            System.out.println("Conexión y sincronización con MySQL completada.");
+            System.out.println("Conexion y sincronizacion con MySQL completada.");
         } catch (SQLException e) {
             System.err.println("Aviso JDBC (inicializarBaseDeDatos): " + e.getMessage());
         } finally {
