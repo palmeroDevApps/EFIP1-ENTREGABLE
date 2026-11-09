@@ -1,0 +1,15 @@
+================================================
+      JRMARKET - CIERRE Y ARQUEO DE TURNO       
+================================================
+Turno Nro        : #2
+Operador         : Cristian Palmero
+Apertura         : 2026-11-08 10:54:26
+Cierre           : 2026-11-08 20:41:06
+Fondo Inicial    : $ 20.000,00
+Ventas Efectivo  : $ 24.900,00
+Ventas Transf.   : $ 1.650,00
+Saldo Teórico    : $ 44.900,00
+Saldo Físico Real: $ 46.550,00
+Diferencia Total : $ 0,00
+Observaciones    : 
+================================================
